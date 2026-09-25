@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Triage Wizard</title>
+<style>
+:root{--ink:#172e3b;--muted:#526975;--line:#dce5e7;--teal:#08786f;--teal-soft:#e7f3f1;--bg:#f5f7f7;--card:#fff;--warn:#c9834a;--warn-soft:#fff7ef;--warn-ink:#7a4a1c;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#e6eef1;--muted:#a7b8c0;--line:#2c3d46;--teal:#3fb8ad;--teal-soft:#123833;--bg:#0f1a1f;--card:#16242b;--warn:#d69a5f;--warn-soft:#2e2116;--warn-ink:#f0c99a}}
+:root[data-theme="dark"]{--ink:#e6eef1;--muted:#a7b8c0;--line:#2c3d46;--teal:#3fb8ad;--teal-soft:#123833;--bg:#0f1a1f;--card:#16242b;--warn:#d69a5f;--warn-soft:#2e2116;--warn-ink:#f0c99a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:16px;line-height:1.6}
+.wrap{max-width:920px;margin:0 auto;padding:24px 16px 48px}
+.layout{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start}
+.flow{position:sticky;top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:6px}
+.flow .n{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--muted);line-height:1.35;transition:background .2s,border-color .2s,color .2s}
+.flow .n b{display:block;color:var(--ink);font-size:13.5px}
+.flow .n.warn{border-style:dashed;border-color:var(--warn);color:var(--warn-ink)}.flow .n.warn b{color:var(--warn-ink)}
+.flow .n.done{border-color:var(--teal)}
+.flow .n.on{background:var(--teal);border-color:var(--teal);color:#e7f3f1;box-shadow:0 0 0 3px var(--teal-soft)}.flow .n.on b{color:#fff}
+.flow .n.warn.on{background:var(--warn);border-color:var(--warn);color:#fff}.flow .n.warn.on b{color:#fff}
+.flow .n.next{border-color:var(--teal);background:var(--teal-soft);color:var(--ink)}
+.flow .sub{margin-left:12px;display:flex;flex-direction:column;gap:4px}
+.flow .sub .n{padding:5px 9px;font-size:12.5px}
+.flow .paths{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-left:12px}
+.flow .paths .n{padding:5px 8px;font-size:12px;text-align:center}
+.flow .arrow{text-align:center;color:var(--line);line-height:.6;font-size:14px}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.flow{position:static;flex-direction:row;flex-wrap:wrap;gap:4px;padding:10px}.flow .n{padding:4px 8px;font-size:12px}.flow .n b{font-size:12px;display:inline}.flow .n small{display:none}.flow .sub,.flow .paths{display:contents}.flow .arrow{display:none}}
+.dots{display:flex;gap:6px;margin:0 0 18px}.dots i{flex:1;height:4px;border-radius:2px;background:var(--line)}.dots i.on{background:var(--teal)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 20px}
+h2{font-size:22px;margin:0 0 4px;line-height:1.35}
+.lead{color:var(--muted);margin:0 0 16px;font-size:14px}
+.btns{display:grid;gap:10px}
+.btns button{text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer;line-height:1.4}
+.btns button b{display:block;font-size:17px}.btns button small{color:var(--muted);font-size:13px}
+.btns button:hover,.btns button:focus-visible{border-color:var(--teal);outline:none;background:var(--teal-soft)}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.setup label{font-size:13px;color:var(--muted)}
+.setup select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:var(--ink)}
+.setup .span2{grid-column:1/-1}.setup .win{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}.setup .win .seg{margin:0}
+.setup input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:var(--ink)}
+.seg{display:flex;gap:6px;margin-top:4px}.seg label{flex:1;text-align:center;border:1px solid var(--line);border-radius:8px;padding:7px;cursor:pointer;font-size:14px;color:var(--ink)}
+.seg label:has(input:checked){border-color:var(--teal);background:var(--teal-soft);font-weight:700}.seg input{position:absolute;opacity:0;width:0;height:0}
+.note{border-radius:8px;padding:10px 14px;font-size:14px;margin:0 0 14px;background:var(--warn-soft);border:1px dashed var(--warn);color:var(--warn-ink)}
+.res .path{font-size:30px;font-weight:700;margin:0;line-height:1.2}.res .ver{color:var(--teal);font-weight:700;font-size:18px;margin:0 0 12px}
+.res dl{margin:0 0 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}.res dt{color:var(--muted)}.res dd{margin:0}
+pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font:inherit;font-size:14px;margin:0 0 12px}
+.row{display:flex;gap:10px;justify-content:space-between;margin-top:14px}
+.row button{font:inherit;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.row .primary{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700}
+.hidden{display:none}
+.foot{margin:18px 0 0;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body><div class="wrap">
+<div class="dots" id="dots"></div>
+<div class="layout">
+<aside class="flow" id="flow" aria-label="流程位置">
+  <div class="n warn" data-n="mit"><b>止血（並行）</b><small>線上影響持續就先做</small></div>
+  <div class="n" data-n="s1"><b>Step 1 受理</b><small>環境、現象、影響誰</small></div>
+  <div class="arrow">↓</div>
+  <div class="n" data-n="s2"><b>Step 2 Triage</b><small>評估三件事，做一個決定</small></div>
+  <div class="sub">
+    <div class="n" data-n="a1">影響 → Severity</div>
+    <div class="n" data-n="a2">急迫性 → Priority、最晚解決</div>
+    <div class="n" data-n="a3">可行性 → workaround、最快交付</div>
+    <div class="n" data-n="dec"><b>Decide 處置與交付安排</b></div>
+  </div>
+  <div class="paths">
+    <div class="n" data-n="p-hot">Hotfix</div>
+    <div class="n" data-n="p-patch">Scheduled Patch</div>
+    <div class="n" data-n="p-formal">Formal Release</div>
+    <div class="n" data-n="p-svc">服務處理</div>
+    <div class="n" data-n="p-inv" style="grid-column:1/-1">限時調查 → 回 Step 2</div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="n" data-n="s3"><b>Step 3 準備</b><small>修復、版本、Readiness</small></div>
+  <div class="n" data-n="s4"><b>Step 4 Change</b><small>依授權執行</small></div>
+  <div class="n" data-n="s5"><b>Step 5 驗證</b><small>確認有效，結案</small></div>
+</aside>
+<div class="card" id="card"></div>
+</div>
+<p class="foot">Triage Wizard v1.12 · 規則同《Issue Triage 與交付流程》v1.12</p>
+</div>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const iso=d=>d.toISOString().slice(0,10);
+const today=new Date(); today.setHours(0,0,0,0);
+// ---- settings (remembered)
+let S={base:'2026.06.0',patchYM:'',patchPart:'',cadence:'monthly'};
+const PARTS=[['early','上旬',5],['mid','中旬',15],['late','下旬',25]];
+const slotDate=slot=>{const [y,m,p]=slot.split('-');return new Date(+y,+m-1,PARTS.find(x=>x[0]===p)[2])};
+const slotLabel=slot=>{const [y,m,p]=slot.split('-');return `${+m} 月${PARTS.find(x=>x[0]===p)[1]}`};
+const defaultSlot=()=>{for(let i=0;i<3;i++){const d=new Date(today.getFullYear(),today.getMonth()+i,1);for(const [p] of PARTS){const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${p}`;if(slotDate(k)-today>=3*864e5)return k}}return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-late`};
+const curSlot=()=>`${S.patchYM}-${S.patchPart}`;
+const patchDate=()=>slotDate(curSlot());
+const patchLabel=()=>slotLabel(curSlot());
+try{Object.assign(S,JSON.parse(localStorage.getItem('tw3')||'{}'))}catch(e){}
+if(!S.patchYM||!S.patchPart||slotDate(curSlot())<today){const [y,m,p]=defaultSlot().split('-');S.patchYM=`${y}-${m}`;S.patchPart=p}
+const save=()=>{try{localStorage.setItem('tw3',JSON.stringify(S))}catch(e){}};
+const formalVer=()=>{const m=S.base.match(/^(\d{4})\.(\d{2})/);if(!m)return '下一正式版';const step=S.cadence==='quarterly'?3:1;let d=new Date(+m[1],+m[2]-1+step,1);const cur=new Date(today.getFullYear(),today.getMonth(),1);let n=0;while(d<=cur&&n<48){d=new Date(d.getFullYear(),d.getMonth()+step,1);n++}return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.0`};
+const nextPatch=()=>{const m=S.base.match(/^(\d{4}\.\d{2})\.(\d+)/);return m?`${m[1]}.${+m[2]+1}`:'YYYY.MM.n'};
+const daysToPatch=()=>Math.round((patchDate()-today)/864e5);
+
+// ---- answers
+let A={}; let step=0;
+const Q=[
+ {key:'bleed',title:'線上影響正在持續或擴大？',opts:[['yes','是','先止血：Rollback／Config／受控 SQL／停用功能。通知值班，和下面並行。'],['no','否','']]},
+ {key:'sev',title:'影響多嚴重？',opts:[
+   ['Sev1','Sev1 核心服務大範圍失效','例：核心系統全面停擺；資料寫錯且已被下游使用'],
+   ['Sev2','Sev2 重要功能失效','例：某項主要功能失效，需人工介入'],
+   ['Sev3','Sev3 局部異常，核心可運作','例：單一功能偶發錯誤、dashboard 延遲'],
+   ['Sev4','Sev4 輕微','例：錯字、排版'],
+   ['N/A','不適用：服務申請／新需求','']]},
+ {key:'due',title:'最晚何時要解決？',opts:[
+   ['today','今天','正在擋生產、出貨或客戶承諾'],
+   ['week','這幾天','擋驗收、上線，或沒有可接受的 workaround'],
+   ['patch',()=>`下一個 Patch 窗口前（${patchLabel()}，約 ${daysToPatch()} 天後）`,''],
+   ['formal',()=>`可以等正式版（${formalVer()}）`,''],
+   ['unknown','還不知道','']]},
+ {key:'wa',title:()=>`有 workaround 能撐到下一個 Patch 窗口（${patchLabel()}）嗎？`,opts:[['yes','有，撐得到',''],['no','沒有，或撐不到',''],['unknown','還不知道','']]},
+ {key:'chg',title:'要改什麼？',opts:[['fix','改 code：修復',''],['feature','改 code：新功能／需完整整合',''],['svc','服務處理（例如 Operation Change）','權限、設定、資料修正，不改 code']]},
+];
+const skip=q=>{ if(q.key==='wa') return !(A.chg==='fix'&&A.due==='patch'); return false };
+// order: bleed, sev, due, chg, wa → put chg before wa
+const ORDER=['bleed','sev','due','chg','wa'];
+const qs=ORDER.map(k=>Q.find(q=>q.key===k));
+
+function decide(){
+  const {bleed,sev,due,wa,chg}=A; let p,pw,path,ver='',why,next;
+  // priority
+  if(due==='today'||(sev==='Sev1'&&bleed==='yes')){p='P1';pw=sev==='Sev1'&&bleed==='yes'?'Sev1 現行 Incident 預設 P1':'今天就要解決'}
+  else if(due==='week'||(wa==='no'&&sev!=='Sev4'&&sev!=='N/A')){p='P2';pw=due==='week'?'這幾天要解決，加速處理':'沒有可接受的 workaround，無法等正常排程'}
+  else if(sev==='Sev4'||sev==='N/A'){p='P4';pw='影響輕微，納入排程'}
+  else {p='P3';pw='影響可控制，可接受正常排程'}
+  // path
+  const unknown=chg==='fix'&&(due==='unknown'||wa==='unknown');
+  if(unknown){path='限時調查';why='最晚解決時間或 workaround 還不清楚；指定調查人與回 Triage 的時間，不硬填版本';next='回 Step 2'}
+  else if(chg==='svc'){path='服務處理';why='不改 code，例如 Operation Change；不需修復版本';next=`依既有程序處理；改環境走 Step 4 Change（${bleed==='yes'?'Urgent／War room':'Normal'}），再 Step 5 驗證`}
+  else if(chg==='feature'){path='Formal Release';ver=formalVer();why='新功能或需完整整合，走正式班車，不走 Hotfix／Patch；可先出 Beta 給指定客戶 pilot';next='Step 3 準備（完整 PRR）'}
+  else if(due==='today'||due==='week'||(due==='patch'&&wa==='no')){path='Hotfix';ver=nextPatch();why=due==='patch'?'沒有 workaround 撐到 Patch 窗口':'撐不到下一個 Patch 窗口';next='Step 3 準備（加速 readiness，不等例會）'}
+  else if(due==='patch'){path='Scheduled Patch';ver=nextPatch();why=`workaround 撐得到 ${patchLabel()} 的 Patch 窗口`;next='Step 3 準備（審查修復範圍）'}
+  else{path='Scheduled Patch';ver=nextPatch();why=`影響可以等；修復預設進最近的 Patch 窗口（${patchLabel()}）。要延到 ${formalVer()} 須寫理由、等待風險、接受者`;next='Step 3 準備（審查修復範圍）'}
+  return {p,pw,path,ver,why,next};
+}
+
+function light(){
+  const map={bleed:['s1'],sev:['s2','a1'],due:['s2','a2'],chg:['s2','dec'],wa:['s2','a3','dec']};
+  const nodes=document.querySelectorAll('#flow .n'); nodes.forEach(n=>n.classList.remove('on','done','next'));
+  const doneKeys=ORDER.slice(0,step).filter(k=>!skip(qs.find(q=>q.key===k)));
+  doneKeys.forEach(k=>(map[k]||[]).forEach(id=>document.querySelector(`[data-n="${id}"]`).classList.add('done')));
+  if(A.bleed==='yes')document.querySelector('[data-n="mit"]').classList.add(step===0?'on':'done');
+  if(step<qs.length){const k=qs[step].key;(map[k]||[]).forEach(id=>document.querySelector(`[data-n="${id}"]`).classList.add('on'));if(k==='bleed')document.querySelector('[data-n="mit"]').classList.add('on')}
+  else{
+    ['s1','s2','a1','a2','a3','dec'].forEach(id=>document.querySelector(`[data-n="${id}"]`).classList.add('done'));
+    const d=decide(); const pid={'Hotfix':'p-hot','Scheduled Patch':'p-patch','Formal Release':'p-formal','服務處理':'p-svc','限時調查':'p-inv'}[d.path];
+    if(pid)document.querySelector(`[data-n="${pid}"]`).classList.add('on');
+    const nxt=d.path==='限時調查'?['s2']:d.path==='服務處理'?['s4','s5']:['s3','s4','s5'];
+    nxt.forEach(id=>document.querySelector(`[data-n="${id}"]`).classList.add('next'));
+  }
+}
+function render(){
+  light();
+  const dots=$('#dots'); dots.innerHTML=qs.map((q,i)=>`<i class="${i<=step?'on':''}"></i>`).join('')+`<i class="${step>=qs.length?'on':''}"></i>`;
+  const card=$('#card');
+  if(step<qs.length){
+    const q=qs[step];
+    if(skip(q)){step++;render();return}
+    const title=typeof q.title==='function'?q.title():q.title;
+    let setup='';
+    if(step===0) setup=`<div class="setup">
+      <div><label>這條線目前的版本（含修補序號）</label><input id="base" value="${S.base}" placeholder="2026.06.1"></div>
+      <div><label>班車</label><div class="seg"><label><input type="radio" name="cad" value="monthly" ${S.cadence==='monthly'?'checked':''}>月</label><label><input type="radio" name="cad" value="quarterly" ${S.cadence==='quarterly'?'checked':''}>季</label></div></div>
+      <div class="span2"><label>下一個 Patch 窗口</label><div class="win"><input id="patchYM" type="month" value="${S.patchYM}"><div class="seg">${PARTS.map(([p,l])=>`<label><input type="radio" name="part" value="${p}" ${S.patchPart===p?'checked':''}>${l}</label>`).join('')}</div></div></div></div>`;
+    card.innerHTML=`${setup}<h2>${title}</h2><p class="lead">${step===0?'上面只填一次，會記住。':`第 ${step+1} 題，共 ${qs.length} 題`}</p>
+      ${A.bleed==='yes'&&step>0?'<div class="note">止血並行中；下面決定的是永久修復怎麼交付。</div>':''}
+      <div class="btns">${q.opts.map(([v,l,s])=>`<button data-v="${v}"><b>${typeof l==='function'?l():l}</b>${s?`<small>${s}</small>`:''}</button>`).join('')}</div>
+      <div class="row">${step>0?'<button id="back">上一題</button>':'<span></span>'}<span></span></div>`;
+    if(step===0){
+      $('#base').addEventListener('change',e=>{S.base=e.target.value.trim();save()});
+      $('#patchYM').addEventListener('change',e=>{S.patchYM=e.target.value;save()});
+      document.querySelectorAll('input[name="part"]').forEach(r=>r.addEventListener('change',e=>{S.patchPart=e.target.value;save()}));
+      document.querySelectorAll('input[name="cad"]').forEach(r=>r.addEventListener('change',e=>{S.cadence=e.target.value;save()}));
+    }
+    card.querySelectorAll('.btns button').forEach(b=>b.addEventListener('click',()=>{A[q.key]=b.dataset.v;step++;render()}));
+    const back=$('#back'); if(back)back.addEventListener('click',()=>{do{step--}while(step>0&&skip(qs[step]));render()});
+  } else {
+    const d=decide();
+    const rec=[`Severity／Priority：${A.sev} / ${d.p}（${d.pw}）`,`止血：${A.bleed==='yes'?'進行中（並行）':'不需要'}`,`處置／交付路徑：${d.path}${d.ver?' '+d.ver:''}`,`為什麼：${d.why}`,`下一步：${d.next}`,`Ticket Owner／期限／驗收條件／下次回覆：（填）`].join('\n');
+    card.innerHTML=`<div class="res"><p class="path">${d.path}</p><p class="ver">${d.ver||'&nbsp;'}</p>
+      <dl><dt>Severity</dt><dd>${A.sev}</dd><dt>Priority</dt><dd>${d.p}，${d.pw}</dd><dt>為什麼</dt><dd>${d.why}</dd><dt>下一步</dt><dd>${d.next}</dd></dl>
+      ${A.bleed==='yes'?'<div class="note">止血並行中，Owner 要有人。永久修復照上面的路徑。</div>':''}
+      <pre id="rec">${rec}</pre>
+      <div class="row"><button id="back">上一題</button><span style="flex:1"></span><button id="copy" class="primary">複製</button><button id="again">再一張</button></div></div>`;
+    $('#copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#rec').textContent);$('#copy').textContent='已複製'}catch(e){$('#copy').textContent='請手動複製'}});
+    $('#again').addEventListener('click',()=>{A={};step=0;render()});
+    $('#back').addEventListener('click',()=>{step=qs.length-1;while(step>0&&skip(qs[step]))step--;render()});
+  }
+  window.scrollTo({top:0});
+}
+render();
+})();
+</script>
+</body></html>

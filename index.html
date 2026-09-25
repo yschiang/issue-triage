@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Issue 受理、Triage 處置決策、Release Plan、Readiness 與 Change 的完整作業指南。">
+<title>Issue Triage 與交付流程 · 作業指南</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230f766e'/%3E%3Cpath d='M10 12h20M10 20h14M10 28h20' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{--ink:#172e3b;--muted:#526975;--line:#dce5e7;--teal:#08786f;--bg:#f5f7f7;--nav:246px}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:92px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.85 -apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}a{color:var(--teal);text-underline-offset:4px}a:hover{color:#064e49}button,select{font:inherit}button{cursor:pointer}a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid #e9b84c;outline-offset:3px}.skip{position:fixed;top:-80px;left:12px;z-index:10;background:white;padding:12px}.skip:focus{top:5px}.topbar{height:66px;position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 30px;gap:12px}.brand{display:flex;align-items:center;gap:12px;font-weight:750;color:var(--ink);text-decoration:none}.mark{display:grid;place-items:center;background:var(--teal);color:white;border-radius:7px;width:30px;height:30px;font-size:18px}.topnote{font-size:14px;color:var(--muted)}.layout{max-width:1480px;margin:auto;display:grid;grid-template-columns:var(--nav) minmax(0,1fr);gap:44px;padding:32px}.sidebar{position:sticky;top:98px;align-self:start;max-height:calc(100vh - 125px);overflow:auto;padding:6px 8px 0 0}.eyebrow{font-size:12px;letter-spacing:.12em;font-weight:750;color:var(--teal);text-transform:uppercase}.nav-label{margin:0 12px 16px;color:var(--muted);font-size:14px}.sidebar nav a{display:flex;gap:13px;text-decoration:none;color:var(--muted);line-height:1.6;font-size:14px;padding:10px 12px;border-left:2px solid transparent}.sidebar nav a span{font-size:12px;color:#82969f;font-variant-numeric:tabular-nums;padding-top:2px}.sidebar nav a.active,.sidebar nav a:hover{background:#e8f1ef;color:#085b55;border-left-color:var(--teal)}.sidebar-foot{font-size:13px;color:var(--muted);margin:25px 12px;padding-top:18px;border-top:1px solid var(--line)}main{min-width:0;max-width:1040px}.page-head{padding:4px 0 26px}h1{font-size:clamp(28px,3vw,39px);letter-spacing:-.035em;line-height:1.35;margin:10px 0 14px}.lede{font-size:17px;color:var(--muted);max-width:740px;margin:0}.tags{display:flex;gap:8px;margin:20px 0 0;flex-wrap:wrap}.tag{font-size:12px;border:1px solid var(--line);padding:3px 10px;border-radius:4px;background:white;color:var(--muted)}.overview{background:white;border:1px solid var(--line);border-radius:10px;padding:26px 28px;margin-bottom:28px}.overview-head{display:flex;justify-content:space-between;gap:20px;align-items:start}.overview h2{font-size:20px;line-height:1.5;margin:0 0 6px}.overview p{margin:0;color:var(--muted);font-size:14px}.motion-button{border:1px solid var(--line);background:white;border-radius:5px;padding:5px 11px;font-size:13px;white-space:nowrap;color:var(--muted)}.flow-scroll{overflow-x:auto;margin:20px -4px 12px}.flow{display:block;width:100%;min-width:660px;height:auto}.flow text{font-family:inherit}.flow .pipe{stroke:#93adae;stroke-width:2;fill:none}.flow .pulse{stroke:var(--teal);stroke-width:3;stroke-dasharray:7 15;animation:travel 2s linear infinite}.paused .pulse{animation-play-state:paused}@keyframes travel{to{stroke-dashoffset:-44}}.flow-caption{display:flex;align-items:flex-start;gap:10px;border-top:1px solid var(--line);padding-top:14px;font-size:14px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:50%;background:#d38b33;flex:none;margin-top:9px}.decision{margin:0 0 30px;padding:24px 28px;background:#eaf3f0;border-left:3px solid var(--teal)}.decision h2{font-size:19px;margin:0 0 10px;line-height:1.5}.decision p{margin:0;font-size:15px}.clocks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:17px 0}.clock{border-top:1px solid #bfd5cd;padding-top:12px;font-size:14px;color:var(--muted)}.clock b{display:block;color:var(--ink);font-size:16px;margin-bottom:3px}.intro{font-size:15px;color:var(--muted);padding:0 4px 8px}.intro>p:first-child{display:none}.intro strong{color:var(--ink)}.document-section{background:white;padding:30px 32px;margin:0 0 18px;border:1px solid var(--line);border-radius:8px}.document-section h2{font-size:25px;letter-spacing:-.02em;line-height:1.5;margin:0 0 24px;padding-bottom:16px;border-bottom:1px solid var(--line)}h3{font-size:19px;line-height:1.55;margin:32px 0 14px}p{margin:14px 0}strong{font-weight:700}ul,ol{padding-left:25px}li{padding-left:3px;margin:8px 0}li p{margin:4px 0}.table-wrap{overflow:auto;margin:19px 0 22px;border:1px solid var(--line);border-radius:6px}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.8;text-align:left}th{background:#edf3f3;color:#33525b;font-weight:650}th,td{padding:13px 15px;vertical-align:top;border-bottom:1px solid var(--line);min-width:115px}tr:last-child td{border-bottom:0}td:first-child{font-weight:600;color:#26454e}tr:nth-child(even) td{background:#fbfcfc}td code{white-space:nowrap}code{font:13px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#145e59;background:#edf4f2;border-radius:3px;padding:2px 5px}pre{background:#f2f6f5;border:1px solid var(--line);border-radius:6px;padding:20px;overflow:auto;line-height:1.8}pre code{padding:0;background:none;white-space:pre-wrap;overflow-wrap:anywhere;color:#36555c}summary{cursor:pointer;color:var(--teal);font-weight:650;padding:8px 0}details[open] summary{margin-bottom:20px}.footer{font-size:13px;color:var(--muted);padding:18px 0 40px}.mobile-nav{display:none}#section-10~ol{list-style:none;padding:0;counter-reset:faq}#section-10~ol li{counter-increment:faq;padding:20px 0 20px 43px;border-top:1px solid var(--line);position:relative}#section-10~ol li:before{content:counter(faq,decimal-leading-zero);position:absolute;left:0;color:var(--teal);font-size:14px;font-weight:700}.task-list-item{list-style:none}.task-list-item input{accent-color:var(--teal);margin-right:8px}
+@media(min-width:1440px){.layout{gap:64px}}@media(max-width:1040px){:root{--nav:210px}.layout{padding:25px;gap:25px}.document-section{padding:25px}.overview{padding:24px}.clocks{gap:14px}}@media(max-width:800px){.layout{display:block;padding:22px 18px}.sidebar{display:none}.topbar{padding:0 18px;height:59px}.topnote{font-size:12px}.mobile-nav{display:block;margin-bottom:22px}.mobile-nav label{font-size:13px;color:var(--muted);margin-right:10px}.mobile-nav select{max-width:100%;width:calc(100% - 65px);padding:9px;border:1px solid var(--line);border-radius:5px;background:white;color:var(--ink);font-size:14px}.page-head{padding-bottom:22px}.document-section{padding:24px 20px}.document-section h2{font-size:23px}.overview{padding:21px 18px}.decision{padding:20px}.clocks{grid-template-columns:1fr;gap:12px}.clock{padding-top:9px}.clock b{display:inline;margin-right:8px}.tag{font-size:11px}.flow-scroll{margin-right:-18px}.intro{font-size:14px}html{scroll-padding-top:78px}}@media(max-width:400px){.topnote{display:none}.layout{padding:18px 12px}.document-section{padding:22px 16px}.overview-head{display:block}.motion-button{margin-top:12px}.lede{font-size:16px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{background:white;font-size:11pt}.topbar,.sidebar,.mobile-nav,.motion-button{display:none}.layout{display:block;padding:0}.document-section{padding:15px 0;border:0}.overview,.decision{break-inside:avoid}.table-wrap{overflow:visible}th,td{min-width:0}a{color:inherit}h2,h3{break-after:avoid}.flow .pulse{animation:none}}
+
+.executive-summary{background:#fff;border:1px solid var(--line);border-top:3px solid var(--teal);border-radius:8px;padding:26px 30px;margin-bottom:28px}.executive-summary h2{font-size:24px;margin:4px 0 18px;line-height:1.5}.executive-summary>p{font-size:17px;line-height:1.9;margin:0 0 22px}.executive-summary ol{padding-left:24px;margin-bottom:0}.executive-summary li{padding-left:5px;margin:15px 0;line-height:1.85}.executive-summary li p+p{font-size:14px;border-left:2px solid #bbd5ce;padding-left:12px;margin-top:9px;color:var(--muted)}.executive-summary li p+p strong{font-weight:500;color:var(--muted)}.executive-summary li::marker{color:var(--teal);font-weight:700}.executive-summary li strong{color:#075e58}@media(max-width:800px){.executive-summary{padding:23px 20px}.executive-summary>p{font-size:16px}}@media print{.executive-summary{break-inside:avoid}}
+
+.summary-page{max-width:860px;margin:36px auto 64px;background:#fff;padding:36px 42px;border:1px solid var(--line);border-top:3px solid var(--teal);border-radius:8px}.summary-page h1{font-size:32px}.summary-page h2{font-size:21px;margin:28px 0 16px}.summary-page li{margin:22px 0}.summary-page li p+p{font-size:14px;color:var(--muted);border-left:2px solid #bfd5cd;padding-left:12px;margin-top:8px}.summary-action{border-top:1px solid var(--line);padding-top:20px;font-weight:700}@media(max-width:800px){.summary-page{margin:20px 14px;padding:24px 20px}.summary-page h1{font-size:27px}}
+
+.action-guide{background:transparent;border:0;padding:0}.action-guide>h2{font-size:24px;border:0;margin:0;padding:0 0 10px}.action-guide>.section-lead{margin:0 0 18px;color:var(--muted)}.step-card .triage-sub{margin:14px 0 18px;border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfcfc;overflow-x:auto}.step-card .triage-sub svg{display:block;width:100%;min-width:640px;height:auto;font-family:inherit}@media print{.step-card .triage-sub{break-inside:avoid}}.step-card dl.task{display:grid;grid-template-columns:64px 1fr;gap:8px 14px;margin:0}.step-card dl.task dt{color:var(--teal);font-size:13px;font-weight:700;padding-top:2px}.step-card dl.task dd{margin:0}.step-card dl.task ol{margin:0;padding-left:20px}.step-card dl.task ol li{margin:3px 0}.step-card dl.task-head{margin-bottom:6px}@media(max-width:800px){.step-card dl.task{grid-template-columns:52px 1fr}}.step-card h4.step-sub{margin:18px 0 10px;font-size:15px;color:var(--teal);letter-spacing:.02em}.step-card details.inline-ref{margin:12px 0 4px;padding:8px 12px;background:#f6f9f8;border:1px solid var(--line);border-radius:6px}.step-card details.inline-ref>summary{cursor:pointer;font-size:14px;color:var(--muted)}.step-card details.inline-ref[open]>summary{margin-bottom:6px}.step-card ul.scale-quick{margin:0;padding-left:20px;font-size:14px;line-height:1.8}.step-card ol.decide-flow{padding-left:22px;margin:0 0 10px}.step-card ol.decide-flow li{margin:6px 0}.step-card ol.decide-flow li::marker{color:var(--teal);font-weight:700}.step-card{background:white;border:1px solid var(--line);border-radius:8px;padding:22px 26px;margin-bottom:14px}.step-card h3{margin:0 0 14px;font-size:20px}.step-card p:last-child{margin-bottom:0}.step-card:nth-of-type(2){border-left:4px solid var(--teal)}.document-section.core{border-left:4px solid var(--teal);margin-top:26px}.document-section.core>h2{font-size:24px}.document-section.core .table-wrap{margin-top:12px}.reference-heading{margin:30px 0 18px}.reference-heading h2{margin:0;font-size:24px}.reference-heading p{margin:4px 0 12px;color:var(--muted)}.reference-heading button{background:white;color:var(--teal);border:1px solid var(--line);border-radius:5px;padding:6px 12px;font-size:13px}.reference{padding:12px 24px;margin-bottom:10px}.reference>summary{font-size:17px;color:var(--ink)}.reference[open]{padding-bottom:24px}.overview>summary{font-size:18px;color:var(--ink)}.overview{padding:16px 24px}.overview[open]{padding-bottom:24px}.overview[open]>.overview-head{margin-top:12px}.reference h3:first-of-type{margin-top:18px}@media(max-width:800px){.action-guide{padding:0}.step-card{padding:20px}.reference{padding:12px 18px}.reference[open]{padding-bottom:20px}}@media print{.step-card{break-inside:avoid}.reference-heading button{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">跳至主要內容</a>
+<header class="topbar"><a class="brand" href="#top"><span class="mark" aria-hidden="true">≡</span>Issue Triage <span style="font-weight:400;color:#71858b">/ 作業指南</span></a><a class="topnote" href="./executive-summary.html">Executive Summary ↗</a></header>
+<div class="layout" id="top">
+<aside class="sidebar"><p class="nav-label">本頁目錄</p><nav aria-label="章節導覽"><a href="#overview"><span>↗</span>流程總覽</a><a href="#section-1"><span>01</span>五步流程</a><a href="#section-2"><span>02</span>角色與決策責任</a><a href="#section-6"><span>03</span>版本與交付紀錄</a><a href="#section-3"><span>04</span>Severity 與 Priority</a><a href="#section-4"><span>05</span>Mitigation 與交付路徑</a><a href="#section-5"><span>06</span>Readiness Review 與 Change</a><a href="#section-11"><span>07</span>Type 與關聯紀錄</a><a href="#section-12"><span>08</span>流程角色一覽</a><a href="#section-7"><span>09</span>狀態與回應節奏</a><a href="#section-8"><span>10</span>紀錄模板</a><a href="#section-9"><span>11</span>業界參考</a><a href="#section-10"><span>12</span>FAQ</a></nav><div class="sidebar-foot"><a href="./executive-summary.html">Executive Summary ↗</a><br>適用線上 Incident、UAT 問題、服務申請與新需求。</div></aside>
+<main id="content">
+<div class="mobile-nav"><label for="jump">跳至</label><select id="jump" aria-label="跳至章節"><option value="#overview">流程總覽</option></select></div>
+<div class="page-head"><div class="eyebrow">Issue → Resolution → Delivery</div><h1>Issue Triage 與交付流程</h1></div>
+<section class="overview" id="overview" aria-labelledby="flow-title"><div class="overview-head"><div><h2 id="flow-title">流程總覽</h2><p>以目前 2026.06.0 為例：選 Hotfix 或 Patch，下一個修補版本皆為 2026.06.1。</p></div><button class="motion-button" id="motion" type="button" aria-pressed="false">暫停動態</button></div>
+<div class="flow-scroll" tabindex="0" role="region" aria-label="流程圖，可左右捲動"><svg xmlns="http://www.w3.org/2000/svg" class="flow" viewBox="-20 0 920 855" role="img" aria-labelledby="svg-title svg-desc">
+<title id="svg-title">Issue Triage、版本交付與緊急處置</title>
+<style>.pipe{stroke:#93adae;stroke-width:2;fill:none}.pulse{stroke:#08786f;stroke-width:3;stroke-dasharray:7 15}</style>
+<desc id="svg-desc">一般案件受理後，於 Triage 評估並決定下一步。版本修復分為 Hotfix、Scheduled Patch 或 Formal Release，再完成適用 Readiness、Change 與驗證。Production Issue 需立即控制影響時，並行啟動緊急處置，依影響與授權選擇 Urgent Change 或 War room。Urgent Change 先完成必要核准；War room 依預授權處置，同步記錄並補齊允許延後的檢查。圖中以目前版本 2026.06.0 為例，Hotfix 與 Scheduled Patch 為可選路徑，下一個修補版本皆為 2026.06.1，依實際發布順序遞增；Beta 是下一正式版新功能的提前 UAT 版本。Hotfix 分別追蹤客戶驗證、主線整合與後續版本納入，無固定先後。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#93adae" stroke-width="1.5"/></marker><marker id="tracking-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#807095" stroke-width="1.5"/></marker></defs>
+<g font-family="Noto Sans TC, sans-serif" font-size="16" fill="#172e3b">
+<path class="pipe" d="M93 40V25H770V34" marker-end="url(#arrow)"/><path class="pipe pulse" style="stroke:#b37a2d" d="M93 40V25H765"/>
+<text x="430" y="17" text-anchor="middle" font-size="13" fill="#946124">線上 Production Issue → 即刻止血</text>
+<rect x="10" y="40" width="165" height="100" rx="7" fill="#f2f6f6" stroke="#d3e1e1"/>
+<text x="27" y="69" font-size="12" fill="#526975">01 · INTAKE</text><text x="27" y="96" font-weight="700">Issue 來源與受理</text><text x="27" y="121" font-size="13" fill="#526975">報案／Alarm／UAT 等</text>
+<path class="pipe" d="M175 90H234" marker-end="url(#arrow)"/><path class="pipe pulse" d="M177 90H229"/>
+<rect x="240" y="40" width="370" height="100" rx="7" fill="#eaf5f0" stroke="#08786f"/>
+<text x="257" y="67" font-size="12" fill="#08786f">02 · ISSUE TRIAGE</text><text x="257" y="94" font-weight="700">評估影響、急迫性與修復可行性</text><text x="257" y="120" font-size="13" fill="#526975">決定處置方式與交付安排</text>
+<path class="pipe" d="M425 140V167H105V234" marker-end="url(#arrow)"/><path class="pipe" d="M425 167H315V234" marker-end="url(#arrow)"/><path class="pipe" d="M425 167H520V234" marker-end="url(#arrow)"/>
+<rect x="17" y="187" width="176" height="26" rx="4" fill="#fff"/><text x="105" y="205" text-anchor="middle" font-size="13" fill="#08786f">不能等下次 Patch</text>
+<rect x="227" y="187" width="176" height="26" rx="4" fill="#fff"/><text x="315" y="205" text-anchor="middle" font-size="13" fill="#08786f">可等近期修補窗口</text>
+<rect x="437" y="187" width="166" height="26" rx="4" fill="#fff"/><text x="520" y="205" text-anchor="middle" font-size="13" fill="#08786f">新功能／需整合交付</text>
+<rect x="10" y="240" width="190" height="90" rx="7" fill="#fff" stroke="#c5d4d8"/><text x="105" y="271" text-anchor="middle" font-weight="700">Hotfix</text><text x="105" y="299" text-anchor="middle" font-size="14" font-family="monospace" fill="#08786f">2026.06.1</text>
+<rect x="220" y="240" width="190" height="90" rx="7" fill="#fff" stroke="#c5d4d8"/><text x="315" y="271" text-anchor="middle" font-weight="700">Scheduled Patch</text><text x="315" y="299" text-anchor="middle" font-size="14" font-family="monospace" fill="#08786f">2026.06.1</text>
+<rect x="430" y="240" width="180" height="90" rx="7" fill="#fff" stroke="#c5d4d8"/><text x="520" y="271" text-anchor="middle" font-weight="700">Formal Release</text><text x="520" y="299" text-anchor="middle" font-size="14" font-family="monospace" fill="#08786f">2026.09.0</text>
+<path class="pipe" d="M315 330V344H105M520 330V344H105"/><path class="pipe" d="M105 330V354" marker-end="url(#arrow)"/><path class="pipe pulse" d="M105 333V348"/>
+<rect x="10" y="360" width="190" height="95" rx="7" fill="#f2f6f6" stroke="#d3e1e1"/>
+<text x="26" y="386" font-size="12" fill="#526975">03 · PREPARE</text><text x="26" y="412" font-weight="700">修復與 Readiness</text><text x="26" y="438" font-size="13" fill="#526975">適用測試、發布準備</text>
+<rect x="220" y="360" width="190" height="95" rx="7" fill="#f2f6f6" stroke="#d3e1e1"/>
+<text x="236" y="386" font-size="12" fill="#526975">04 · CHANGE</text><text x="236" y="412" font-weight="700">授權與執行</text><text x="236" y="438" font-size="13" fill="#526975">Normal / Urgent</text>
+<rect x="430" y="360" width="180" height="95" rx="7" fill="#f2f6f6" stroke="#d3e1e1"/>
+<text x="446" y="386" font-size="12" fill="#526975">05 · VERIFY</text><text x="446" y="412" font-weight="700">驗證與結案</text><text x="446" y="438" font-size="13" fill="#526975">追蹤剩餘工作</text>
+<path class="pipe" d="M200 410H214" marker-end="url(#arrow)"/><path class="pipe" d="M410 410H424" marker-end="url(#arrow)"/>
+<path class="pipe" stroke-dasharray="5 4" d="M610 115H625V490H520V461" marker-end="url(#arrow)"/>
+<text x="212" y="516" font-size="13" fill="#526975">不需版本／變更：完成服務後直接驗證</text>
+<rect x="650" y="40" width="240" height="110" rx="7" fill="#fff6e7" stroke="#dfbf85"/>
+<text x="668" y="68" font-size="12" fill="#946124">緊急處置</text><text x="668" y="97" font-weight="700">現場判斷與適用授權</text><text x="668" y="122" font-size="13" fill="#775d3d">Urgent Change / War room</text><text x="668" y="141" font-size="12" fill="#775d3d">依影響與授權選擇程序</text>
+<path class="pipe" d="M770 150V189" marker-end="url(#arrow)"/><path class="pipe pulse" style="stroke:#b37a2d" d="M770 155V184"/>
+<rect x="650" y="195" width="240" height="110" rx="7" fill="#fff6e7" stroke="#dfbf85"/>
+<text x="668" y="226" font-weight="700">立即處置與恢復驗證</text><text x="668" y="253" font-size="13" fill="#775d3d">Rollback / Config / SQL / Fix</text><text x="668" y="277" font-size="13" fill="#775d3d">Urgent：必要核准後執行</text><text x="668" y="296" font-size="12" fill="#775d3d">War room：依預授權處置</text>
+<path class="pipe" d="M770 305V354" marker-end="url(#arrow)"/><path class="pipe pulse" style="stroke:#b37a2d" d="M770 310V349"/>
+<rect x="650" y="360" width="240" height="95" rx="7" fill="#fff6e7" stroke="#dfbf85"/>
+<text x="668" y="390" font-weight="700">穩定後結案／交接</text><text x="668" y="416" font-size="13" fill="#775d3d">Incident 依恢復結果結案</text><text x="668" y="440" font-size="13" fill="#775d3d">永久修復另有 Owner 與期限</text>
+<text x="659" y="490" font-size="13" fill="#946124">同步記錄，依授權補齊</text><text x="659" y="512" font-size="13" fill="#946124">永久修復並行追蹤</text>
+<path id="hotfix-tracking-link" d="M10 270H-8V542H220V558" fill="none" stroke="#807095" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#tracking-arrow)"/>
+<g id="hotfix-followup">
+<rect x="10" y="564" width="425" height="270" rx="7" fill="#f1eff8"/>
+<text x="28" y="591" font-size="14" font-weight="700" fill="#514367">HOTFIX · 修復後續追蹤</text>
+<text x="28" y="616" font-size="12" fill="#665580">三項結果各自追蹤，無固定先後</text>
+<text x="220" y="650" text-anchor="middle" font-weight="700" fill="#514367">2026.06.1</text>
+<path d="M220 660V681M75 702V681H365V702M220 681V702" fill="none" stroke="#807095" stroke-width="2"/>
+<rect x="22" y="703" width="117" height="76" rx="6" fill="white"/>
+<rect x="154" y="703" width="132" height="76" rx="6" fill="white"/>
+<rect x="301" y="703" width="122" height="76" rx="6" fill="white"/>
+<text x="80" y="729" text-anchor="middle" font-size="14" font-weight="700" fill="#514367">客戶驗證</text><text x="80" y="754" text-anchor="middle" font-size="12" fill="#665580">範圍、結果與觀察</text>
+<text x="220" y="729" text-anchor="middle" font-size="14" font-weight="700" fill="#514367">主線整合</text><text x="220" y="754" text-anchor="middle" font-size="12" fill="#665580">main／trunk</text>
+<text x="362" y="729" text-anchor="middle" font-size="14" font-weight="700" fill="#514367">後續版本納入</text><text x="362" y="754" text-anchor="middle" font-size="12" fill="#665580">適用分支與回歸</text>
+<text x="28" y="811" font-size="12" fill="#665580">各項都有 Owner、期限與完成證據</text>
+</g>
+<g id="beta-pilot-option">
+<rect x="455" y="564" width="435" height="270" rx="7" fill="#eef4f8"/>
+<text x="473" y="591" font-size="14" font-weight="700" fill="#264e60">BETA／PILOT · 新功能提前驗收（選用）</text>
+<text x="473" y="616" font-size="12" fill="#466879">PO ＋ Release Manager 確認安排</text>
+<rect x="483" y="634" width="379" height="48" rx="6" fill="white"/>
+<text x="499" y="663" font-size="14" fill="#264e60">Beta 試跑　2026.09.0-beta.1</text>
+<path class="pipe" d="M672 682V701" marker-end="url(#arrow)"/>
+<text x="672" y="726" text-anchor="middle" font-size="13" fill="#466879">UAT 修正、整合與正式版 Readiness</text>
+<path class="pipe" d="M672 735V755" marker-end="url(#arrow)"/>
+<rect x="483" y="758" width="379" height="48" rx="6" fill="white"/>
+<text x="499" y="787" font-size="14" fill="#264e60">目標正式版　2026.09.0</text>
+</g>
+</g></svg>
+</div></section>
+<section class="document-section action-guide" aria-labelledby="section-1"><h2 id="section-1">1 Issue 進來：核心是 Triage，前後四步把它接進來、送出去</h2>
+<p class="section-lead"><strong>Step 2 Triage 是這條流程的重點</strong>：評估影響、急迫性、修復可行性，做出處置決定。Step 1 把 Issue 接進來；Step 3–5 把決定準備好、執行、驗證。</p>
+<article class="step-card"><h3 id="step-1-issue-從哪裡來">Step 1 受理：把 Issue 接進來</h3>
+<dl class="task">
+<dt>誰</dt><dd>Support／值班人員，照既有受理流程</dd>
+<dt>做什麼</dt><dd>來源不限：報案、Alarm、UAT、內部測試／維運、服務申請／新需求。開單或連主單。<strong>線上影響持續或擴大，先通知值班／Incident Owner 止血。</strong></dd>
+<dt>產出</dt><dd><strong>一張 Ticket：環境、現象、影響誰、聯絡人。</strong></dd>
+<dt>交給</dt><dd>Triage Owner → Step 2</dd>
+</dl>
+</article><article class="step-card"><h3 id="step-2-一起判斷決定怎麼處理">Step 2 Triage：評估三件事，做一個決定</h3>
+<dl class="task task-head"><dt>誰</dt><dd>Triage Owner（預設受理 team 的 Section Manager，SM）召集 Product Owner（PO）與 Release Manager（RM）</dd><dt>做什麼</dt><dd><strong>Assess 三項評估 → Decide 一個決定。</strong>Triage 就是這兩件事，不是分類完再交另一個規劃流程。</dd></dl>
+<div class="triage-sub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 955 550" role="img" aria-labelledby="t2-title"><title id="t2-title">Step 2 Triage 子流程：三項評估、並行止血、一個決定（四個問題）選出交付路徑</title><defs><marker id="t2-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#526975"/></marker></defs><g font-family="inherit"><text x="20" y="20" text-anchor="start" font-size="11" fill="#08786f" font-weight="700">ASSESS 三項評估</text><rect x="20" y="30" width="290" height="50" rx="8" fill="#fff" stroke="#dce5e7" stroke-width="1.4"/><text x="165" y="50" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">1 影響 Impact</text><text x="165" y="68" text-anchor="middle" font-size="11.5" fill="#172e3b">→ 定級 Severity（Sev1–Sev4）與影響範圍</text><rect x="330" y="30" width="290" height="50" rx="8" fill="#fff" stroke="#dce5e7" stroke-width="1.4"/><text x="475" y="50" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">2 急迫性 Urgency</text><text x="475" y="68" text-anchor="middle" font-size="11.5" fill="#172e3b">→ 定級 Priority（P1–P4）與最晚解決時間</text><rect x="640" y="30" width="290" height="50" rx="8" fill="#fff" stroke="#dce5e7" stroke-width="1.4"/><text x="785" y="50" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">3 修復可行性 Feasibility</text><text x="785" y="68" text-anchor="middle" font-size="11.5" fill="#172e3b">→ workaround 能撐多久、最快安全交付、可行選項</text><path d="M165,80 L165,96" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M475,80 L475,96" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M785,80 L785,96" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M165,96 L785,96" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M475,96 L475,110" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="20" y="110" width="915" height="44" rx="6" fill="#fff7ef" stroke="#c9834a" stroke-width="1.4" stroke-dasharray="5 4"/><text x="477" y="127" text-anchor="middle" font-size="12" fill="#7a4a1c" font-weight="700">並行，不等決定：線上影響持續或擴大 → 立即止血（Rollback／Config／受控 SQL／停用功能／安全可交付的 Hotfix）</text><text x="477" y="144" text-anchor="middle" font-size="11" fill="#7a4a1c">Step 1 受理時已啟動；Decide 只確認止血方式與 Owner，永久修復另走下面的出口</text><path d="M475,154 L475,172" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="20" y="172" width="915" height="310" rx="10" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="40" y="194" text-anchor="start" font-size="13" fill="#08786f" font-weight="700">DECIDE 一個決定：處置與交付安排</text><text x="40" y="208" text-anchor="start" font-size="10.5" fill="#526975">四個問題依序問，每題都有出口；四題合起來只做一個決定</text><rect x="50" y="214" width="200" height="52" rx="26" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="150" y="236" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">1 資訊夠決定嗎？</text><text x="150" y="254" text-anchor="middle" font-size="10.5" fill="#526975">Severity、Priority、三個時間</text><rect x="280" y="214" width="200" height="52" rx="26" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="380" y="236" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">2 要改 code 嗎？</text><text x="380" y="254" text-anchor="middle" font-size="10.5" fill="#526975">不改就是服務處理</text><rect x="510" y="214" width="200" height="52" rx="26" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="610" y="236" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">3 修復，還是新功能？</text><text x="610" y="254" text-anchor="middle" font-size="10.5" fill="#526975">需完整整合視同新功能</text><rect x="740" y="214" width="200" height="52" rx="26" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="840" y="236" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">4 比時間</text><text x="840" y="254" text-anchor="middle" font-size="10.5" fill="#526975">撐到 vs 最快安全交付、Patch 窗口</text><path d="M250,240 L280,240" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="265.0" y="233" text-anchor="middle" font-size="11" fill="#526975">是</text><path d="M480,240 L510,240" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="495.0" y="233" text-anchor="middle" font-size="11" fill="#526975">是</text><path d="M710,240 L740,240" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="725.0" y="233" text-anchor="middle" font-size="11" fill="#526975">修復</text><path d="M150,266 L150,296" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="164" y="285" text-anchor="middle" font-size="11" fill="#526975">否</text><rect x="50" y="296" width="200" height="64" rx="8" fill="#f6f9f8" stroke="#dce5e7" stroke-width="1.4"/><text x="150" y="314" text-anchor="middle" font-size="12" fill="#172e3b" font-weight="700">限時調查</text><text x="150" y="330" text-anchor="middle" font-size="11" fill="#526975">指定調查人與回 Triage 的時間</text><text x="150" y="346" text-anchor="middle" font-size="11" fill="#526975">不硬填版本</text><path d="M380,266 L380,296" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="404" y="285" text-anchor="middle" font-size="10.5" fill="#526975">不改 code</text><rect x="280" y="296" width="200" height="48" rx="8" fill="#f6f9f8" stroke="#dce5e7" stroke-width="1.4"/><text x="380" y="314" text-anchor="middle" font-size="11.5" fill="#172e3b" font-weight="700">不改 → 服務處理（如 Operation Change）</text><text x="380" y="332" text-anchor="middle" font-size="11.5" fill="#172e3b" font-weight="700">改環境走 Step 4，再 Step 5 驗證</text><path d="M610,266 L610,296" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><text x="624" y="285" text-anchor="middle" font-size="11" fill="#526975">新功能</text><rect x="510" y="296" width="200" height="48" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="610" y="314" text-anchor="middle" font-size="12" fill="#172e3b" font-weight="700">Formal Release</text><text x="610" y="330" text-anchor="middle" font-size="11" fill="#526975">可先出 Beta 給指定客戶 pilot（選用）</text><path d="M840,266 L840,276 L725,276 L725,444" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M725,320 L740,320" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="740" y="296" width="200" height="48" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="840" y="316" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">Hotfix</text><text x="840" y="333" text-anchor="middle" font-size="11" fill="#526975">撐不到下一個 Patch 窗口</text><path d="M725,382 L740,382" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="740" y="358" width="200" height="48" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="840" y="378" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">Scheduled Patch</text><text x="840" y="395" text-anchor="middle" font-size="11" fill="#526975">撐得到近期修補窗口</text><path d="M725,444 L740,444" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="740" y="420" width="200" height="48" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="840" y="440" text-anchor="middle" font-size="13" fill="#172e3b" font-weight="700">延到 Formal Release</text><text x="840" y="457" text-anchor="middle" font-size="11" fill="#526975">要寫理由、等待風險、接受者</text><path d="M475,482 L475,496" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#t2-arrow)"/><rect x="20" y="496" width="915" height="42" rx="6" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="477" y="522" text-anchor="middle" font-size="12" fill="#172e3b">寫進 Ticket：是否止血與方式 · 交付路徑 · Ticket Owner、下一步與期限 · 驗收條件 · 下次回覆時間 · 一句「為什麼這樣決定」</text></g></svg></div>
+
+<h4 class="step-sub">Assess 三項評估</h4>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Triage 評估動作與產出對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>做什麼</th>
+<th>產出什麼</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>評估影響（Impact）：影響誰、業務受阻程度</td>
+<td>Severity 與影響範圍</td>
+</tr>
+<tr class="even">
+<td>評估急迫性（Urgency）：最晚何時要解決，結合業務影響</td>
+<td>Priority 與最晚解決時間</td>
+</tr>
+<tr class="odd">
+<td>評估修復可行性（Feasibility）：workaround
+是否有效、能撐多久，最快何時可安全交付</td>
+<td>workaround 能撐到何時、最快安全交付時間、可行選項與風險</td>
+</tr>
+</tbody>
+</table></div>
+<details class="inline-ref" open><summary>定級速查：Sev1–Sev4 與 P1–P4 一句話定義（完整規則見 <a href="#section-3">4</a>）</summary>
+<ul class="scale-quick">
+<li><strong>Severity（有多嚴重）</strong>：Sev1 核心服務大範圍失效或重大生產／資料風險 · Sev2 重要功能失效，影響特定客戶或關鍵流程 · Sev3 局部異常，核心流程可運作 · Sev4 輕微 · N/A 服務申請／需求</li>
+<li><strong>Priority（有多急）</strong>：P1 正在發生或迫近重大影響，立即控制 · P2 重要流程受阻、無可接受 workaround，加速處理 · P3 可接受正常排程 · P4 納入 backlog</li>
+<li>Sev1 現行 Incident 預設 P1；其餘 Priority 依影響、急迫性、workaround 與期限綜合決定，不只看回報件數。</li>
+</ul>
+</details>
+<h4 class="step-sub">Decide 一個決定：處置與交付安排</h4>
+<p><strong>止血是並行動作，不排在問題裡。</strong>線上影響持續或擴大 → 立即止血（Rollback、Config、受控 SQL、停用功能或安全可交付的 Hotfix），Step 1 受理時就啟動；Decide 只確認止血方式與 Owner，永久修復照下面走。</p>
+<p><strong>四個問題依序問，每題有出口；四題合起來只做一個決定。</strong></p>
+<ol class="decide-flow">
+<li><strong>資訊夠決定嗎？</strong>Severity、Priority、三個時間（最晚解決、workaround 能撐到、最快安全交付含測試／核准／部署）都抓得到。抓不到 → <strong>限時調查</strong>：指定調查人與回 Triage 的時間，不硬填版本。</li>
+<li><strong>要改 code 嗎？</strong>不改 → 服務處理（例如 Operation Change：權限、設定、資料修正），改環境走 Step 4 依授權執行，再 Step 5 驗證，不經 Step 3。</li>
+<li><strong>是修復，還是新功能？</strong>新功能或需完整整合 → <strong>Formal Release</strong>；可先出 Beta 給指定客戶 pilot（選用，PO＋RM 確認範圍與日期）。</li>
+<li><strong>修復：比時間，選路徑。</strong>把「最晚解決時間、workaround 能撐到」和「最快安全交付、下一個 Patch 窗口」放一起看：</li>
+</ol>
+<div class="table-wrap" tabindex="0" role="region" aria-label="修復交付路徑選擇對照表，可左右捲動"><table class="decide-table">
+<thead>
+<tr class="header">
+<th>情況</th>
+<th>路徑</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>撐不到下一個 Patch 窗口</td>
+<td><strong>Hotfix</strong></td>
+<td>必要驗證與核准完成即出</td>
+</tr>
+<tr class="even">
+<td>撐得到近期修補窗口</td>
+<td><strong>Scheduled Patch</strong></td>
+<td>進下一班修補</td>
+</tr>
+<tr class="odd">
+<td>可以等到正式版</td>
+<td><strong>延到 Formal Release</strong></td>
+<td>必須寫理由、等待風險、接受者；不能只為少走一次流程</td>
+</tr>
+</tbody>
+</table></div>
+<p>交付安排由 <strong>PO＋RM 依 SM 的評估共同確認</strong>；沒共識怎麼辦見 <a href="#section-2">第 2 章</a>。</p>
+<dl class="task">
+<dt>產出</dt><dd><strong>是否立即止血；Hotfix／Scheduled Patch／Formal Release 或其他處理；Ticket Owner、下一步與期限；驗收條件、下次回覆時間，與一句「為什麼這樣決定」。</strong></dd>
+<dt>交給</dt><dd>改 code → SM 與 RM，Step 3；服務處理 → 執行人，Step 4／Step 5</dd>
+</dl>
+</article><article class="step-card"><h3 id="step-3-把修復與發布準備好">Step 3 準備：把修復與發布準備好</h3>
+<dl class="task">
+<dt>誰</dt><dd>SM（修復與測試）、RM（版本與 Readiness）</dd>
+<dt>做什麼</dt><dd><ol>
+<li>SM 協調修復與測試。</li>
+<li>RM 定版本號，依路徑選 Readiness 範圍（<a href="#section-5">6.1</a>）；Hotfix 走加速審查，不等例行班車。</li>
+<li>確認部署、監控與 Rollback 方式。</li>
+</ol></dd>
+<dt>產出</dt><dd><strong>可交付的修復、驗證證據、發布安排。</strong></dd>
+<dt>交給</dt><dd>執行人 → Step 4</dd>
+</dl>
+</article><article class="step-card"><h3 id="step-4-依授權執行-change">Step 4 Change：依授權執行</h3>
+<dl class="task">
+<dt>誰</dt><dd>執行人（依產品聯絡表指定的工程師或維運）；授權人與實際 protocol 也查聯絡表</dd>
+<dt>做什麼</dt><dd><ol>
+<li>依影響與授權選程序：Normal／Urgent／War room（<a href="#section-5">6.2</a>）。</li>
+<li>核准完成才執行；War room 依預授權處置、同步記錄。</li>
+<li>執行後補齊允許延後的項目；超出授權範圍現場升級。</li>
+</ol></dd>
+<dt>產出</dt><dd><strong>實際操作、版本、範圍與執行結果；需補辦項目有 Owner 與期限。</strong></dd>
+<dt>交給</dt><dd>Ticket Owner → Step 5</dd>
+</dl>
+</article><article class="step-card"><h3 id="step-5-確認有效回覆並結案">Step 5 驗證：確認有效，回覆並結案</h3>
+<dl class="task">
+<dt>誰</dt><dd>Ticket Owner，會同 User／服務負責人</dd>
+<dt>做什麼</dt><dd><ol>
+<li>在受影響環境驗證，回覆 User。</li>
+<li>通過 → 結案；未通過、影響擴大或 workaround 失效 → <strong>回 Step 2 重新 Triage</strong>。</li>
+<li>服務恢復可結束 Incident；永久修復、主線整合、其他客戶交付另開追蹤。code merged 不等於結案。</li>
+</ol></dd>
+<dt>產出</dt><dd><strong>驗證證據、User 確認、剩餘工作的 Owner 與期限。</strong></dd>
+<dt>交給</dt><dd>結案；剩餘工作回到各自 Owner</dd>
+</dl>
+</article></section><section class="document-section core" id="section-2" aria-labelledby="core-roles"><h2 id="core-roles">2 角色與決策責任</h2>
+<p><strong>兩個責任角色：PO 決定要什麼，RM 說能不能上。</strong>責任角色不是職稱，依產品與發布範圍具名指定。SM 是職稱，負責工程執行，把「怎麼做、要多久、風險、證據」交給 PO 與 RM 判斷。</p>
+<div class="triage-sub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 955 292" role="img" aria-labelledby="r-title"><title id="r-title">兩個責任角色 PO 與 RM 共同確認交付安排，SM 提供工程評估；沒共識由具名升級主管決定</title><defs><marker id="r-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#526975"/></marker></defs><g font-family="inherit"><text x="20" y="22" text-anchor="start" font-size="11" fill="#08786f" font-weight="700">PM side</text><text x="935" y="22" text-anchor="end" font-size="11" fill="#08786f" font-weight="700">Engineering side</text><text x="477" y="22" text-anchor="middle" font-size="11" fill="#08786f" font-weight="700">兩個責任角色</text><rect x="70" y="32" width="320" height="74" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="230" y="54" text-anchor="middle" font-size="14" fill="#172e3b" font-weight="700">Product Owner（PO）</text><text x="230" y="73" text-anchor="middle" font-size="12" fill="#526975">做什麼、先做什麼</text><text x="230" y="89" text-anchor="middle" font-size="12" fill="#526975">業務價值、驗收條件</text><rect x="565" y="32" width="320" height="74" rx="8" fill="#e7f3f1" stroke="#08786f" stroke-width="1.4"/><text x="725" y="54" text-anchor="middle" font-size="14" fill="#172e3b" font-weight="700">Release Manager（RM）</text><text x="725" y="73" text-anchor="middle" font-size="12" fill="#526975">發布條件具備了沒</text><text x="725" y="89" text-anchor="middle" font-size="12" fill="#526975">相依性、何時與如何安全部署</text><path d="M230,106 L230,130 M725,106 L725,130 M230,130 L725,130" fill="none" stroke="#526975" stroke-width="1.4"/><path d="M477,130 L477,150" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#r-arrow)"/><rect x="287" y="150" width="380" height="50" rx="10" fill="#fff" stroke="#08786f" stroke-width="1.4"/><text x="477" y="171" text-anchor="middle" font-size="14" fill="#172e3b" font-weight="700">PO ＋ RM 共同確認交付安排</text><text x="477" y="189" text-anchor="middle" font-size="11" fill="#526975">路徑、版本、日期；由 Ticket Owner 回覆 User</text><rect x="20" y="150" width="235" height="50" rx="8" fill="#fff" stroke="#8aa3ad" stroke-width="1.4" stroke-dasharray="5 4"/><text x="137" y="169" text-anchor="middle" font-size="12" fill="#526975" font-weight="700">工程評估（SM 彙整）</text><text x="137" y="187" text-anchor="middle" font-size="11" fill="#526975">怎麼做、要多久、技術風險、驗證證據</text><path d="M255,175 L287,175" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#r-arrow)"/><path d="M477,200 L477,228" fill="none" stroke="#526975" stroke-width="1.4" marker-end="url(#r-arrow)"/><text x="490" y="218" text-anchor="start" font-size="11" fill="#526975">期限內沒共識</text><rect x="287" y="228" width="380" height="50" rx="10" fill="#fff7ef" stroke="#c9834a" stroke-width="1.4"/><text x="477" y="249" text-anchor="middle" font-size="13" fill="#7a4a1c" font-weight="700">具名升級主管決定（產品聯絡表）</text><text x="477" y="267" text-anchor="middle" font-size="11" fill="#7a4a1c">決定資源、範圍或日期取捨；品質關卡不免除，例外由授權者核准</text><rect x="700" y="214" width="235" height="64" rx="8" fill="#fff" stroke="#c9834a" stroke-width="1.4" stroke-dasharray="5 4"/><text x="817" y="236" text-anchor="middle" font-size="12" fill="#7a4a1c" font-weight="700">緊急事件</text><text x="817" y="253" text-anchor="middle" font-size="11" fill="#7a4a1c">直接走值班／War room 預授權</text><text x="817" y="268" text-anchor="middle" font-size="11" fill="#7a4a1c">不等 PO／RM 協調或例會</text></g></svg></div>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>角色</th>
+<th>組織歸屬與任命原則</th>
+<th>核心責任</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Product Owner</td>
+<td>PM side；依產品範圍與業務決策授權指定</td>
+<td>What／Priority／Business
+Value／Acceptance：做什麼、先做什麼、業務價值與驗收</td>
+</tr>
+<tr class="even">
+<td>Section Manager</td>
+<td>Engineering side 職稱，不是責任角色；負責 team 的技術交付</td>
+<td>Build／Technical
+execution：技術方案、工作拆解、工程執行、修復與測試</td>
+</tr>
+<tr class="odd">
+<td>Release Manager</td>
+<td>Engineering side；依發布範圍指定</td>
+<td>Release readiness／Quality
+gate／Dependency／Deployment／Rollback：發布準備、品質關卡、相依性、部署與回退</td>
+</tr>
+</tbody>
+</table></div>
+<p>Engineering 與 PM 各有 Section Manager → Manager 兩層。RM 由誰擔任：</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>發布範圍</th>
+<th>Release Manager 通常由誰擔任</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>單 team release</td>
+<td>Engineering Section Manager 兼任</td>
+</tr>
+<tr class="even">
+<td>跨 team release</td>
+<td>Engineering Manager 或專職 Release Manager</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>交付安排由 PO 與 RM 依 SM 的工程評估共同確認；工程師不單方承諾 release plan。</li>
+<li>每個產品／Release Plan 寫明具名 PO 與 RM。SM 兼 RM 時，仍分別確認「工程完成」與「具備發布條件」。</li>
+<li>PO 與 RM 談不攏：PO 說期限與延後損失，RM 說缺哪些發布條件，SM 給可行選項。期限內沒共識 → 產品聯絡表上的具名升級主管決定，不能只填「主管」。</li>
+<li>主管的取捨不免除品質關卡；例外由既定授權者核准，RM 記錄結論與部署安排。</li>
+<li>緊急事件直接走值班／War room 預授權，不等協調或例會。</li>
+</ul>
+</section>
+<section class="document-section core" id="section-6" aria-labelledby="core-version"><h2 id="core-version">3 版本與交付紀錄</h2>
+
+<p>採 CalVer：<code>YYYY.MM.PATCH</code>，月份代表正式班車基準月份。</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>用途</th>
+<th>範例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>正式班車首次發布</td>
+<td><code>2026.06.0</code></td>
+</tr>
+<tr class="even">
+<td>該版本線 Hotfix</td>
+<td><code>2026.06.1</code></td>
+</tr>
+<tr class="odd">
+<td>後續 Scheduled Patch</td>
+<td><code>2026.06.2</code>，包含已納入的 Hotfix 修復</td>
+</tr>
+<tr class="even">
+<td>下一正式班車</td>
+<td><code>2026.09.0</code></td>
+</tr>
+<tr class="odd">
+<td>下一正式版的新功能 Beta</td>
+<td><code>2026.09.0-beta.1</code>、<code>2026.09.0-beta.2</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Hotfix 與 Scheduled Patch
+是交付節奏，不必各建一套版號；相同版本線的修補序號依發布順序遞增，不預設奇數或偶數代表特定路徑。六月版本在七月修補，仍屬
+<code>2026.06.x</code>。</p>
+<p><strong>每個 Hotfix／Patch 的修復一定要 merge 回主幹，並納入後續的 Patch 或 Formal Release。</strong>先在 main 修再移植到 release branch，或先在 release branch 修再回主線，都可以；但整合要有 Owner 與期限，客戶已驗證不代表主線已納入（見 <a href="#section-4">5.3</a>）。</p>
+<p>Beta 使用
+<code>-beta.N</code>，指向預定正式版；已發布版本不可覆寫。Patch
+原則只含修復，不夾帶新功能或破壞相容性的變更。</p>
+
+<p>每次交付記錄 Affected version、候選／已確認 Target version、實際部署
+version／build、日期、客戶／範圍及驗證結果。Release Manager
+維護受支援版本、班車與 Patch Calendar；Ticket Owner 將安排及變更回覆
+User。</p>
+</section>
+<div class="reference-heading"><h2>需要時再查</h2><p>處理案件時會用到的判斷規則。</p><button type="button" id="expand-references" aria-expanded="false">展開全部參考</button></div>
+<details class="document-section reference" id="section-3"><summary>4 Severity 與 Priority</summary>
+<p><strong>Severity 是影響有多嚴重；Priority 是處理有多急。</strong>例子供對照，不是清單。</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Severity 定級與例子，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>Severity</th>
+<th>判斷</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sev1 Critical</td>
+<td>核心服務全面／大範圍失效，或重大生產、品質、資料風險</td>
+<td>核心系統全面停擺，使用者無法完成主要作業；資料寫錯且已被下游使用</td>
+</tr>
+<tr class="even">
+<td>Sev2 Major</td>
+<td>重要功能失效，影響特定客戶、區域或關鍵流程</td>
+<td>某項主要功能失效，需人工介入才能繼續；某客戶的報表全部錯誤</td>
+</tr>
+<tr class="odd">
+<td>Sev3 Moderate</td>
+<td>局部異常，核心流程仍可運作，影響可控制</td>
+<td>單一功能偶發錯誤，重試即過；dashboard 資料延遲十分鐘</td>
+</tr>
+<tr class="even">
+<td>Sev4 Minor</td>
+<td>輕微呈現或便利性問題，不影響核心結果</td>
+<td>畫面欄位錯字、排版跑掉、匯出檔案欄位順序不對</td>
+</tr>
+<tr class="odd">
+<td>N/A</td>
+<td>一般 Service Request、Enhancement 或不適用嚴重度的工作</td>
+<td>開帳號、加權限、要一份歷史資料匯出、新增一個報表欄位</td>
+</tr>
+</tbody>
+</table></div>
+<p>Incident 按實際影響評級；Bug 要註明正式環境、UAT、Pilot
+或尚未啟用，並區分已發生與潛在影響。恢復服務後保留事件最高
+Severity，另外更新目前影響。</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Priority 定級與例子，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>Priority</th>
+<th>判斷與處置</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>P1 Critical</td>
+<td>正在發生或迫近重大影響，需要立即控制；啟動應變</td>
+<td>Sev1 現行 Incident；Sev2 但明天客戶驗收或出貨受阻</td>
+</tr>
+<tr class="even">
+<td>P2 High</td>
+<td>重要流程受阻、缺乏可接受
+workaround，或無法等待正常排程；加速處理</td>
+<td>Sev2 沒有 workaround；Sev3 但擋住本週 UAT 驗收</td>
+</tr>
+<tr class="odd">
+<td>P3 Normal</td>
+<td>影響可控制，能接受正常排程；評估 Scheduled Patch 或 Formal
+Release</td>
+<td>Sev3 有 workaround；Sev2 已止血、workaround 可撐到 Patch 窗口</td>
+</tr>
+<tr class="even">
+<td>P4 Low</td>
+<td>影響輕微、急迫性低；納入 backlog 並定期重審</td>
+<td>Sev4；一般 Enhancement</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Sev 和 P 不一樣的三個常見情況：</strong></p>
+<ul>
+<li>Sev2，但客戶明天驗收 → P1。急迫性把它拉高。</li>
+<li>Sev1 已 rollback 恢復 → 事件仍記 Sev1，永久修復的 Ticket 是 P2 或 P3。影響已控制，急迫性降下來。</li>
+<li>Sev3，但卡住已承諾的上線日 → P2。不因還沒上 Production 就當成不急。</li>
+</ul>
+<p>Sev1 現行 Incident 預設 P1。Priority 依影響、急迫性、workaround
+與期限綜合決定，不只看回報件數、Alarm
+數量或要求者職級。升降級須記錄時間、依據、決定者與通知對象。</p>
+</details>
+<details class="document-section reference" id="section-4"><summary>5 Mitigation 與交付路徑</summary>
+<h3 id="41-當下是否需要-mitigate">5.1 Mitigation 與 Hotfix 的關係</h3>
+<p>Mitigation 是恢復目標，Hotfix 是修復交付方式；兩者可重疊或先後。手段：Rollback、關閉功能、改 config、受控 SQL／資料修正或緊急修復。</p>
+<p>操作依適用授權與 Change／War room protocol 執行，留下操作內容、範圍、驗證與恢復方式。是否改 code 不是唯一風險判斷。</p>
+<h3 id="42-需要修復版本時的三種節奏">5.2 需要修復版本時的三種節奏</h3>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>路徑</th>
+<th>選用條件</th>
+<th>交付安排</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hotfix</td>
+<td>無法等下次固定 Patch，或目前 workaround 不足以支撐到該時點</td>
+<td>今天、明天或本週；完成必要驗證與核准即發布，不等班車</td>
+</tr>
+<tr class="even">
+<td>Scheduled Patch</td>
+<td>修復需要交付，但影響可控制且能等近期修補窗口</td>
+<td>合併已具備 readiness 的修復，於固定 Patch 窗口交付</td>
+</tr>
+<tr class="odd">
+<td>Formal Release</td>
+<td>新功能／較完整整合；既有功能修復須有延後至正式版的理由，且等待風險可接受</td>
+<td>納入月／季班車，記錄修復延後原因、風險與接受者</td>
+</tr>
+</tbody>
+</table></div>
+
+<p>分流依據是影響能否承受等待、workaround 是否可靠、最快何時能安全交付；不只看 Severity，也不為少走一次流程。<strong>既有修復預設進最早可安全交付且適合的 Patch；不能等就 Hotfix；延到 Formal Release 由 PO 與 Release Manager 記錄原因、殘餘風險與接受者。</strong>涉及班車容量取捨時，再整合到產品 Release Plan。</p>
+<p>以下只列 Step 2 沒有直接講到的情境：</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>判斷情境</th>
+<th>處置原則</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>UAT 問題阻擋驗收、上線或已承諾日期</td>
+<td>依期限、替代方案及修復可行性加速交付，不因尚未上 Production
+就自動降低 Priority；依修復所屬版本提供 Hotfix、近期 Patch 或下一個 Beta
+build</td>
+</tr>
+<tr class="odd">
+<td>修復可很快完成，但問題不急</td>
+<td>不自動選 Hotfix；可依影響與交付成本安排 Patch 或 Formal Release</td>
+</tr>
+<tr class="even">
+<td>問題緊急，但暫時找不到 workaround 或快速修復</td>
+<td>保持應變、限時調查、升級資源，評估停用、隔離或其他恢復方式；持續更新風險與預估時間，不直接改排下一個
+Formal Release</td>
+</tr>
+</tbody>
+</table></div>
+<p>UAT 是驗證階段，不是版本類型：正式支援版本的修復走 Hotfix／Patch；尚未正式發布的新功能以新的 Beta build 修正。時效與風險原則相同。</p>
+<h3 id="43-hotfix-先交付與後續納入">5.3 Hotfix 先交付與後續納入</h3>
+<p>Hotfix 可先完成必要工程測試，再由最急迫且適合的指定 User／客戶進行
+UAT。若在正式環境限定範圍部署，記錄為受控上線與上線驗證，走適用
+Change，不把它只當成測試環境 UAT。</p>
+<p>以下三項結果須分開追蹤，不代表固定執行先後：</p>
+<ul>
+<li><strong>已交付客戶</strong>：實際版本、部署範圍、驗證結果與觀察。</li>
+<li><strong>主線整合</strong>：修復 commit 經 PR 納入
+main／trunk，避免未來版本遺漏。</li>
+<li><strong>後續版本</strong>：將修復納入適用的 Patch／Formal Release
+分支，於各目標分支執行必要 CI 與回歸測試。</li>
+</ul>
+<p>可採 main 先修再移植，或受影響 release branch 先修再回主線；應有明確
+Owner 與追蹤期限。避免把不相關的 release-specific 變更一併帶回主線。客戶
+UAT 通過不取代整合後的驗證，也不代表其他客戶已部署。</p>
+<h3 id="44-beta-提前驗收新功能">5.4 Beta 提前驗收新功能</h3>
+<p><strong>Beta 用於下一個 Formal Release 的新功能，提前提供指定 User 做
+UAT；不是 Hotfix 的另一個名稱。</strong> 可以在兩班正式 Release
+之間交付。</p>
+<p>例如目前正式版為 <code>2026.06.0</code>，七～八月提供
+<code>2026.09.0-beta.1</code>；UAT 修正為
+<code>2026.09.0-beta.2</code>，達到正式發布條件後再交付
+<code>2026.09.0</code>。</p>
+<p>Product Owner 與 Release Manager 共同確認：功能範圍、試跑對象、Beta
+日期、UAT 成功／停止條件、已知限制及正式版目標；Section Manager
+提供技術 readiness 與風險判斷。</p>
+<p>Beta／UAT
+日期與正式交付日期分開記錄。未通過時修正、延後或移出當班範圍；正式交付仍須完成整合、回歸測試及發布條件。</p>
+</details>
+<details class="document-section reference" id="section-5"><summary>6 Readiness Review 與 Change</summary>
+<h3 id="51-依風險選擇審查範圍">6.1 依風險選擇審查範圍</h3>
+<p><strong>所有進入 Production 的變更都要判斷
+readiness，但不必每次重開完整 PRR。</strong>
+以下為本流程建議的審查方式，非業界統一名稱。</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>交付方式</th>
+<th>建議審查方式</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Formal Release</td>
+<td>沿用完整 PRR，確認整體功能、效能、相依性、監控、維運及部署準備</td>
+</tr>
+<tr class="even">
+<td>Scheduled Patch</td>
+<td>沿用既有 PRR
+基線，審查本次修復範圍、影響、回歸測試及部署／恢復方式</td>
+</tr>
+<tr class="odd">
+<td>Hotfix</td>
+<td>加速 readiness
+review，聚焦不能等的原因、最小修復、必要測試、首批對象、監控與恢復；不等例行會議</td>
+</tr>
+<tr class="even">
+<td>Beta</td>
+<td>針對 UAT／pilot 環境與範圍確認 readiness；涉及 Production
+時須符合相應的生產要求</td>
+</tr>
+<tr class="odd">
+<td>War room 處置</td>
+<td>依既定 protocol
+完成現場判斷與授權，同步留紀錄，儘速補齊未完成的檢查與事後檢討</td>
+</tr>
+</tbody>
+</table></div>
+<p>審查至少回答：改什麼、影響誰、有哪些證據及缺口、何時與哪裡執行、如何判斷成功、失敗如何恢復、誰核准與誰觀察。</p>
+<p>涉及 DB
+schema、資料修正、核心交易、重大相依性或難以回退的變更，應提高審查深度，不能只因標示
+Patch／Hotfix
+就降低標準。緊急情況需縮短或延後部分檢查時，依預先定義的授權條件記錄例外與補做安排。</p>
+<h3 id="52-三種執行程序">6.2 三種執行程序</h3>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>程序</th>
+<th>執行方式</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Normal Change</td>
+<td>正常評估與核准後，依核准窗口執行</td>
+</tr>
+<tr class="even">
+<td>Urgent Change</td>
+<td>加速必要評估與核准，於執行前完成適用授權；不等例行審查會議</td>
+</tr>
+<tr class="odd">
+<td>War room protocol</td>
+<td>在既定授權範圍內先處置、同步記錄、事後補齊 Change
+與檢討；超出授權範圍即現場升級</td>
+</tr>
+</tbody>
+</table></div>
+<p>這是本團隊使用的程序名稱與責任安排。Hotfix 不必然等於 War room
+處置，Formal Release
+也不代表任何時點都能上線；依實際風險、時效與授權選擇程序。</p>
+<p><strong>各產品須在產品聯絡表連結實際適用的 Change／War room
+protocol，並列明核准者、值班代理與升級管道。</strong>
+沿用既有制度即可，不另建一套；本文件不是緊急變更的授權憑證。找不到適用
+protocol
+或授權人時，立即使用既有值班升級管道確認，不自行擴張權限。同步記錄操作，允許事後補辦的
+Change 文件、檢查與檢討須有 Owner 與期限。</p>
+<p><strong>Readiness Review 回答「準備好了沒」；Change
+回答「是否授權、何時、如何執行」。</strong>
+兩者共用測試、風險與部署證據，可於同一次 Go／No-Go
+完成，不要求重複填單或審查。</p>
+</details>
+<div class="reference-heading"><h2>參考資訊</h2><p>定義、模板與來源，不是規則。</p></div>
+<details class="document-section reference" id="section-11"><summary>7 Type 與關聯紀錄</summary>
+
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>類型</th>
+<th>定義與處理重點</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Incident</td>
+<td>服務中斷、降級或錯誤結果；優先控制影響、恢復服務</td>
+</tr>
+<tr class="even">
+<td>Bug</td>
+<td>不符合既有規格或承諾功能；確認重現、修復與回歸測試</td>
+</tr>
+<tr class="odd">
+<td>Service Request</td>
+<td>既有服務、權限、設定或操作申請；依標準程序與授權處理</td>
+</tr>
+<tr class="even">
+<td>Enhancement</td>
+<td>新增能力或改變預期行為；釐清價值、範圍與驗收條件</td>
+</tr>
+<tr class="odd">
+<td>Problem</td>
+<td>一個或多個 Incident
+的根因、重複模式或長期風險；追蹤根因及永久改善</td>
+</tr>
+<tr class="even">
+<td>Operation Change</td>
+<td>對環境、部署、設定或資料的受控變更；記錄風險、授權、執行、驗證與恢復方式</td>
+</tr>
+</tbody>
+</table></div>
+<p>Incident、Bug、Problem、Operation Change
+可以互相連結，不必把同一筆紀錄反覆改成不同類型。多個 User
+回報同一問題或大量相同
+Alarm，應建立／連結共同主單，保留各自影響範圍與通知對象。</p>
+</details>
+<details class="document-section reference" id="section-12"><summary>8 流程角色一覽</summary>
+<p><strong>分不清時，先記三句：</strong></p>
+<ul>
+<li>預設 Triage Owner 由受理 team 的 SM 擔任；Ticket Owner 由 Triage 指派，通常是處理工程師；兩者可同一人。Triage Owner 確保決定做出來，決定本身由 PO＋RM 拍板。</li>
+<li>對 User 只有一個窗口：Ticket Owner。Incident Owner 只在重大事件期間存在，對內統籌、對管理層通報，不另開 User 溝通線。</li>
+<li>重大事件由值班依既定條件升級並指定 Incident Owner；沒升級前，值班就是止血的負責人。</li>
+</ul>
+
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>角色（PO、SM、RM 見第 2 章）</th>
+<th>主要責任</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Support／值班人員</td>
+<td>受理、初篩、補資料、查重複及通報；不自行承諾修復版本</td>
+</tr>
+<tr class="even">
+<td>Triage Owner</td>
+<td>確保評估與處置決策完成，指派 Ticket Owner，協調爭議、逾期與升級</td>
+</tr>
+<tr class="odd">
+<td>Ticket Owner</td>
+<td>端到端追蹤、協調、User 更新、風險管理、驗證與結案</td>
+</tr>
+<tr class="even">
+<td>Incident Owner</td>
+<td>重大事件期間統籌恢復、跨團隊協調、決策、升級與對管理層通報</td>
+</tr>
+<tr class="even">
+<td>執行人</td>
+<td>依 Change 授權實際操作環境的工程師或維運；記錄操作、範圍、結果與需補辦項目</td>
+</tr>
+<tr class="odd">
+<td>工程師</td>
+<td>調查、實作、修復與測試；提供可行性、風險及 readiness 證據</td>
+</tr>
+<tr class="odd">
+<td>User</td>
+<td>提供問題與影響，確認 workaround 可接受性，參與 UAT 與結果驗證</td>
+</tr>
+</tbody>
+</table></div><p>角色可以兼任。轉派必須由新 Owner
+明確接受，留下交接時間、目前狀態、未完成事項、風險及下一步；接受前原
+Owner 仍負責。升級不等於責任轉移，User 不承擔內部找人與協調責任。</p>
+</details>
+<details class="document-section reference" id="section-7"><summary>9 狀態與回應節奏</summary>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>狀態</th>
+<th>使用時機</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>New</td>
+<td>已收到，尚未完成初篩</td>
+</tr>
+<tr class="even">
+<td>Triaging</td>
+<td>正在 Assess Issue 與 Decide Resolution</td>
+</tr>
+<tr class="odd">
+<td>Planned</td>
+<td>已有處置方向，等待排程／班車；未排入版本者須有原因與重審日期</td>
+</tr>
+<tr class="even">
+<td>In Progress</td>
+<td>調查、處置、開發、測試、部署或 pilot 中</td>
+</tr>
+<tr class="odd">
+<td>Waiting</td>
+<td>被明確的外部依賴阻擋；填等誰、等什麼、期限及追蹤人</td>
+</tr>
+<tr class="even">
+<td>Resolved</td>
+<td>原問題已驗證，等待確認</td>
+</tr>
+<tr class="odd">
+<td>Closed</td>
+<td>完成結案並留下正確 Resolution；同一問題未解決可重開</td>
+</tr>
+</tbody>
+</table></div>
+<p>重大 Incident 可直接 In Progress，並行補齊 Triage。等待班車使用
+Planned；不得用 Waiting 掩蓋未排程或無
+Owner。轉派、等工程師或等班車不自行暫停 SLA 時鐘。</p>
+<p>以下為建議初始目標；不是修復完成承諾，正式 SLA 與服務時段另定。</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>Priority</th>
+<th>首次人工回應</th>
+<th>初步處置決定</th>
+<th>持續更新</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>P1</td>
+<td>15 分鐘內，走既有值班通報</td>
+<td>立即應變；30 分鐘內提出恢復方向或目前阻礙</td>
+<td>每 30 分鐘至恢復</td>
+</tr>
+<tr class="even">
+<td>P2</td>
+<td>4 工作小時內</td>
+<td>1 工作日內確認 Owner、下一步與交付評估</td>
+<td>每工作日</td>
+</tr>
+<tr class="odd">
+<td>P3</td>
+<td>1 工作日內</td>
+<td>3 工作日內完成 Triage 與安排／評估日期</td>
+<td>每週</td>
+</tr>
+<tr class="even">
+<td>P4</td>
+<td>2 工作日內</td>
+<td>5 工作日內完成 Triage 與評估安排</td>
+<td>每月</td>
+</tr>
+</tbody>
+</table></div>
+<p>預期失約、P1 無人承接、影響擴大、workaround
+失效或風險升高時，立即升級適用的 Triage Owner、Incident
+Owner、主管或值班管道。沒有新進展也須回覆阻礙與下一步。</p>
+<p>Duplicate 須連到主單並保留後續通知。User
+未回覆時，依已約定的提醒與結案規則處理，不標成已修復；仍有未控制重大影響者不得因未回覆而關單。跨組爭議由內部
+Owner 協調，不將案件退給 User 自行找團隊。</p>
+</details>
+<details class="document-section reference" id="section-8"><summary>10 紀錄模板</summary>
+<h3 id="使用者提單">使用者提單</h3>
+<pre class="text"><code>標題：
+產品／功能與環境／客戶／範圍：
+目前版本：
+發生時間與時區：
+預期結果、實際結果與重現方式：
+業務影響、範圍、期限與原因：
+已嘗試處理／workaround：
+附件／log／截圖與聯絡人：</code></pre>
+<h3 id="每案必填triage-與處置決定">每案至少記錄：Triage 與處置決定</h3>
+<p>以下是最小紀錄的參考格式；環境與版本等已在原單提供的資料直接引用，不重複填寫。正式版號與
+readiness 證據可在後續階段補齊。</p>
+<pre class="text"><code>Type／Severity／Priority 與依據（不適用者註明）：
+Ticket Owner／影響與業務期限：
+處置方向：說明／服務處理／Mitigate／修 Bug／新需求／調查／暫緩
+決策理由：為什麼選這個處置，而不是其他選項？
+下一步、處理人、期限與下次回覆時間：
+驗收／結案條件；未定案時的調查與重審時間：</code></pre>
+<h3 id="依情境補充不用每案全部填">依情境補充：不用每案全部填</h3>
+<div class="table-wrap" tabindex="0" role="region" aria-label="作業規範對照表，可左右捲動"><table>
+<thead>
+<tr class="header">
+<th>何時填</th>
+<th>需要補充的紀錄</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>有重複或關聯案件</td>
+<td>主單及相關 Incident／Bug／Problem／Operation Change 連結</td>
+</tr>
+<tr class="even">
+<td>Incident／需 Mitigate</td>
+<td>Incident Owner（重大事件）、方式、授權、實際操作與恢復驗證</td>
+</tr>
+<tr class="odd">
+<td>需選修復交付路徑</td>
+<td>最晚解決時間；workaround
+可用時間、有效證據、可支撐期限及殘餘風險；最快安全修復時間、信心與未知事項</td>
+</tr>
+<tr class="even">
+<td>需版本交付</td>
+<td>Hotfix／Scheduled Patch／Formal Release；Affected
+version、候選／確認 Target version；具名 PO 與 Release Manager、負責的 Section Manager；參與 teams 與決策紀錄</td>
+</tr>
+<tr class="odd">
+<td>修復延至 Formal Release</td>
+<td>延後原因、等待風險、接受者與重審條件</td>
+</tr>
+<tr class="even">
+<td>Beta</td>
+<td>範圍、對象、日期、驗收／停止條件與正式版目標</td>
+</tr>
+<tr class="odd">
+<td>有環境變更</td>
+<td>適用 Readiness 證據、風險、例外核准；Change／War room protocol
+連結、授權及執行紀錄；實際 build／版本、範圍與時間；補做項目、Owner
+與期限</td>
+</tr>
+<tr class="even">
+<td>Hotfix</td>
+<td>客戶交付驗證、主線整合、後續版本納入，各自的 Owner、期限及結果</td>
+</tr>
+<tr class="odd">
+<td>有分歧或逾期</td>
+<td>未決事項、具名升級主管／代理、期限與決定</td>
+</tr>
+</tbody>
+</table></div>
+<p>產品聯絡表集中維護 PO、Release Manager、Section Manager、升級主管與代理，以及適用 Change／War room protocol；Ticket
+引用即可，不需逐單重建。</p>
+<h3 id="user-更新與結案">User 更新與結案</h3>
+<p>每次更新交代目前影響、已完成事項、下一步、負責人、目標時間、風險與下次更新時間。結案前確認：</p>
+<ul class="task-list">
+<li><label><input
+type="checkbox" />原問題或約定交付已在受影響環境驗證。</label></li>
+<li><label><input
+type="checkbox" />處置、版本／範圍、時間、驗證人與證據完整。</label></li>
+<li><label><input type="checkbox" />剩餘 Bug／Problem／正式 rollout／Operation Change 有具名 Owner 與追蹤。</label></li>
+<li><label><input
+type="checkbox" />重大事件責任已結束或明確交接。</label></li>
+<li><label><input type="checkbox" />User
+已確認，或符合已約定的例外結案規則。</label></li>
+<li><label><input type="checkbox" />Resolution 正確，不把
+workaround、Duplicate、No response 或失敗的 Operation Change 標為已修復／成功。</label></li>
+<li><label><input type="checkbox" />有交接時，新 Owner
+已明確接受。</label></li>
+</ul>
+</details>
+<details class="document-section reference" id="section-9"><summary>11 業界參考與適用範圍</summary>
+<p>本文件的責任分工、分流、時限與審查分級是團隊流程設計。下列來源支持相關概念，不代表本文全部規則是業界強制標準。</p>
+<ul>
+<li><a
+href="https://handbook.gitlab.com/handbook/product-development/how-we-work/issue-triage/">GitLab
+Issue Triage</a>：Partial／Complete Triage 與 milestone、Priority。</li>
+<li><a
+href="https://handbook.gitlab.com/handbook/engineering/infrastructure-platforms/developer-experience/bug-prioritization/">GitLab
+Bug Prioritization</a>：跨職能優先排序與 milestone planning。</li>
+<li><a
+href="https://learn.microsoft.com/en-us/azure/devops/repos/git/git-branching-guidance?view=azure-devops">Microsoft
+Git Branching Guidance</a>：主線與 release branch 的修復移植。</li>
+<li><a
+href="https://sre.google/sre-book/evolving-sre-engagement-model/">Google
+SRE PRR</a>：服務可靠性與維運接手準備；不等同每次發布都完整重審。</li>
+<li><a
+href="https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/safe-deployments">Microsoft
+Safe Deployment Practices</a>：漸進部署、品質檢查與緊急加速
+protocol。</li>
+<li><a
+href="https://www.atlassian.com/itsm/change-management/types">Atlassian
+Change Management Types</a>：風險與時效導向的變更管理。</li>
+<li><a href="https://calver.org/">Calendar Versioning</a>：日期版本與
+modifier。</li>
+</ul>
+</details>
+<details class="document-section reference" id="section-10"><summary>12 FAQ</summary>
+<ul>
+<li><strong>多個 User 報案或 Alarm 大量發送，該止血、Hotfix、Patch 還是 Formal？</strong> 線上影響持續就先止血；能不能等下一個 Patch 窗口決定 Hotfix 或 Patch；新功能才走 Formal。見 <a href="#step-2-一起判斷決定怎麼處理">Step 2</a>。</li>
+<li><strong>UAT 發現問題，另出 Hotfix 還是併入下一版？</strong> 看期限與 workaround，不因還沒上 Production 就降 Priority；已支援版本的修復走 Hotfix／Patch，未發布新功能出下一個 Beta build。不能只為合併簽核而延後。見 <a href="#section-4">5.2</a>。</li>
+<li><strong>Release Plan 由誰決定？</strong> PO 決定要什麼，RM 決定能不能上，SM 提供工程評估；PO＋RM 共同確認，沒共識由具名升級主管決定。見 <a href="#section-2">第 2 章</a>。</li>
+</ul>
+</details>
+<footer class="footer">作業指南 v1.12 · 班車頻率與回應時間為建議值，正式採用以產品 SLA、Release Calendar 與授權制度為準。</footer>
+</main></div>
+<script>
+const links=[...document.querySelectorAll('.sidebar nav a')];
+const jump=document.querySelector('#jump');
+jump.replaceChildren();
+links.forEach(a=>{const o=document.createElement('option');o.value=a.getAttribute('href');o.textContent=a.textContent.trim();jump.append(o)});
+jump.addEventListener('change',()=>{location.hash=jump.value});
+const targets=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean).sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);
+const openTarget=()=>{const t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(t?.matches('details'))t.open=true;};window.addEventListener('hashchange',openTarget);openTarget();
+const refs=[...document.querySelectorAll('.reference')];const expand=document.querySelector('#expand-references');expand.addEventListener('click',()=>{const open=expand.getAttribute('aria-expanded')!=='true';refs.forEach(d=>d.open=open);expand.setAttribute('aria-expanded',String(open));expand.textContent=open?'收起全部參考':'展開全部參考';});
+let printState=[];window.addEventListener('beforeprint',()=>{printState=[...document.querySelectorAll('details')].map(d=>[d,d.open]);printState.forEach(([d])=>d.open=true);});window.addEventListener('afterprint',()=>printState.forEach(([d,o])=>d.open=o));
+const active=id=>{links.forEach(a=>{const yes=a.getAttribute('href')==='#'+id;a.classList.toggle('active',yes);if(yes)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current')});jump.value='#'+id};
+let queued=false;const track=()=>{queued=false;let current=targets[0];for(const t of targets){if(t.getBoundingClientRect().top<=150)current=t}if(current)active(current.id)};
+window.addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(track)}},{passive:true});track();
+const motion=document.querySelector('#motion');let paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const setMotion=()=>{document.querySelector('.flow').classList.toggle('paused',paused);motion.textContent=paused?'播放動態':'暫停動態';motion.setAttribute('aria-pressed',String(paused))};setMotion();motion.addEventListener('click',()=>{paused=!paused;setMotion()});
+</script></body></html>
