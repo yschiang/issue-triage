@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Release & Issue Triage 指南</title>
+<!--
+  如何修改（給人和 local agent）
+  1. 內容全部在下面第一個 script 區塊的 GUIDE 物件。改文字、表格、角色、拓撲，只改 GUIDE。
+  2. 第二個 script 區塊是渲染程式，通常不用動。
+  3. 文字格式：**粗體**、`程式碼`、[[RM]] 會變成角色頭像（id 見 GUIDE.roles）。
+  4. 狀態標記：✅ 已定、💡 建議待確認、⏳ 待決、🔧 待填。
+  5. 拓撲：GUIDE.topology.fabs（每廠的 DC 與 zone）、GUIDE.topology.deps（[parent, child]）。
+     依賴圖、對照表、模擬器都會自動重算。資料有錯（fab 名稱不存在、依賴有迴圈）時，頁面會顯示警告框。
+     換成真實依賴後，把 GUIDE.topology.simulated 改成 false。
+  6. 區塊種類（blocks[].type）：key、h、h3、p、note、table、flow、topology、fabtable、sim、slots、freeze、triage、checklist、roles。
+  7. 改完把 GUIDE.meta.version 加一版。
+  不用網路：沒有外部字型、沒有 CDN，可以在內網直接開。
+-->
+<style>
+:root{
+  --teal:#08786f; --teal-soft:#e2f1ee; --ink:#172e3b; --muted:#526975; --line:#dce5e7;
+  --warn:#c9834a; --warn-soft:#fbf0e5; --bg:#fbfcfc; --panel:#ffffff; --tint:#f1f6f6;
+  --todo:#6b5ca5; --head:#172e3b;
+  --font:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --teal:#46b8ab; --teal-soft:#13302d; --ink:#e3ecef; --muted:#9db2bb; --line:#2b3d46;
+    --warn:#e2a56f; --warn-soft:#352719; --bg:#0f1b21; --panel:#15252d; --tint:#1a2c35;
+    --todo:#ab9de3; --head:#0b2430;
+  }
+}
+:root[data-theme="dark"]{
+  --teal:#46b8ab; --teal-soft:#13302d; --ink:#e3ecef; --muted:#9db2bb; --line:#2b3d46;
+  --warn:#e2a56f; --warn-soft:#352719; --bg:#0f1b21; --panel:#15252d; --tint:#1a2c35;
+  --todo:#ab9de3; --head:#0b2430;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.7;padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:880px;margin:0 auto;padding:0 18px}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+
+/* header */
+.top{background:var(--head);color:#fff;padding:calc(22px + env(safe-area-inset-top,0px)) 0 18px}
+.top h1{font-size:1.6rem;line-height:1.3;margin:0 0 .25rem;font-weight:700}
+.top .sub{margin:0 0 .7rem;color:#c8d8dd}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.84rem;color:#c8d8dd}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:.6rem}
+.legend span{font-size:.8rem;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:0 .6rem;color:#e6eff1}
+
+/* journey rail */
+.railbar{background:var(--panel);border-bottom:1px solid var(--line)}
+.rail{position:relative;list-style:none;margin:0;padding:12px 0 2px;display:flex;overflow-x:auto;scrollbar-width:thin}
+.rail li{flex:1 0 62px;position:relative;text-align:center}
+.rail li::before{content:"";position:absolute;top:11px;right:50%;width:100%;height:4px;background:var(--line);border-radius:2px}
+.rail li:first-child::before{display:none}
+.rail li.run::before{background:var(--teal)}
+.rail button{position:relative;z-index:1;width:100%;background:none;border:0;padding:4px 2px;font:inherit;color:inherit;cursor:pointer}
+.rail .dot{display:block;width:18px;height:18px;margin:0 auto 3px;border-radius:50%;border:4px solid var(--line);background:var(--panel)}
+.rail li.lit .dot{border-color:var(--teal);background:var(--teal)}
+.rail .lbl{font-size:.74rem;color:var(--muted);white-space:nowrap}
+.rail li.lit .lbl{color:var(--ink);font-weight:700}
+.here{margin:2px 0 10px;font-size:.86rem;color:var(--muted)}
+.here strong{color:var(--teal)}
+
+/* tabs */
+.tabbar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin}
+.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px 9px;font:inherit;font-size:.95rem;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--teal);font-weight:700}
+
+/* content */
+main{padding-top:6px;padding-bottom:36px}
+h2{font-size:1.25rem;line-height:1.4;margin:2.1rem 0 .5rem}
+h3{font-size:1.02rem;line-height:1.5;margin:1.3rem 0 .4rem}
+p{margin:.55rem 0}
+.key{font-size:1.1rem;font-weight:600;line-height:1.7;border-left:4px solid var(--teal);padding:.1rem 0 .1rem .9rem;margin:1.3rem 0 1rem;max-width:68ch}
+.note{font-size:.9rem;color:var(--muted)}
+.note.warn{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn);padding:.5rem .8rem;border-radius:0 6px 6px 0}
+code{font-family:var(--mono);font-size:.86em;background:var(--tint);padding:.05em .35em;border-radius:4px;white-space:nowrap}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.8rem 1rem;margin:.6rem 0 1rem}
+.flag{display:inline-block;font-size:.76rem;font-weight:600;border:1px solid var(--todo);color:var(--todo);border-radius:999px;padding:0 .55rem;margin-left:.5rem;vertical-align:middle}
+
+/* tables */
+.tw{overflow-x:auto;margin:.4rem 0 1rem;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;vertical-align:top;padding:.55rem .75rem;border-bottom:1px solid var(--line)}
+thead th{background:var(--tint);font-weight:700;white-space:nowrap}
+tbody th{font-weight:600;min-width:6.5em}
+tbody tr:last-child>*{border-bottom:0}
+
+/* role avatar chip */
+.who{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;font-weight:600;font-size:.92em;white-space:nowrap}
+.av{flex:0 0 auto;display:block}
+
+/* vertical flow */
+.vflow{list-style:none;margin:.5rem 0 1rem;padding:0}
+.vflow>li{position:relative;padding:0 0 .95rem 2.6rem}
+.vflow>li::before{content:"";position:absolute;left:calc(.85rem - 1.5px);top:1.85rem;bottom:.15rem;width:3px;background:var(--teal);opacity:.35}
+.vflow>li:last-child::before{display:none}
+.vflow .num{position:absolute;left:0;top:.08rem;width:1.7rem;height:1.7rem;border-radius:50%;border:3px solid var(--teal);background:var(--panel);color:var(--teal);display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.vflow li.cur .num{background:var(--teal);color:#fff}
+.stp{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit}
+button.stp{cursor:pointer}
+.stp .t{font-weight:700}
+.stp[aria-expanded] .t::after{content:"　＋";color:var(--muted);font-weight:400}
+.stp[aria-expanded="true"] .t::after{content:"　－"}
+.stp .s{display:block;color:var(--muted);font-size:.92rem}
+.vflow .d{margin:.4rem 0 0;padding:.6rem .8rem;background:var(--tint);border-radius:8px;font-size:.92rem}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:0 .5rem;margin-left:.45rem;vertical-align:middle}
+
+/* topology */
+.topo svg{width:100%;max-width:560px;height:auto;display:block;margin:0 auto}
+.topo .node{cursor:pointer}
+.topo .node rect{fill:var(--panel);stroke:var(--teal);stroke-width:2}
+.topo .node text{fill:var(--ink);font-size:13px;font-weight:700;font-family:var(--font)}
+.topo .node.sel rect{fill:var(--teal)}
+.topo .node.sel text{fill:#fff}
+.topo .node:focus{outline:none}
+.topo .node:focus-visible rect{stroke-width:4}
+.topo .edge{stroke:var(--muted);stroke-width:1.6;fill:none;opacity:.55}
+.topo .edge.on{stroke:var(--teal);stroke-width:2.6;opacity:1}
+.topo .ah{fill:var(--muted)}
+.tinfo{margin:.6rem 0 0}
+
+/* controls */
+.ctrl{display:flex;flex-wrap:wrap;gap:.6rem 1.1rem;align-items:center;margin:.3rem 0 .8rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);border:0;padding:.42rem .85rem;font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--teal);color:#fff;font-weight:700}
+select{font:inherit;font-size:.9rem;padding:.25rem .4rem;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.btn{font:inherit;font-size:.9rem;padding:.45rem .9rem;border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer}
+.btn.ghost{background:var(--panel);color:var(--teal);font-weight:600}
+
+/* simulator */
+.gantt th,.gantt td{padding:.35rem .4rem;text-align:center;min-width:2.3rem;font-size:.85rem}
+.gantt tbody th{text-align:left;min-width:4.5em}
+.gp{background:var(--teal-soft);color:var(--teal);font-weight:700}
+.gf{background:var(--teal);color:#fff;font-weight:700}
+.lg{display:inline-block;padding:0 .4rem;border-radius:4px}
+.sum{font-weight:600}
+.over{color:var(--warn)}
+
+/* version slots */
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:.4rem 0 .6rem}
+.slot{border:2px solid var(--teal);border-radius:10px;padding:.6rem .75rem;background:var(--panel)}
+.slot .v{font-weight:700;font-size:1.05rem}
+.slot .st{font-size:.85rem;color:var(--muted)}
+.slot.wait{border-style:dashed;border-color:var(--warn);background:var(--warn-soft)}
+
+/* freeze days */
+.week{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:.4rem 0 6px}
+.day{border-radius:8px;padding:.45rem .3rem;text-align:center;border:1px solid var(--line);background:var(--panel);font-size:.88rem}
+.day b{display:block}
+.day.no{background:var(--warn-soft);border-color:var(--warn)}
+.extra{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-bottom:.6rem}
+
+/* triage */
+.assess{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.acard{border:1px solid var(--line);border-top:4px solid var(--teal);border-radius:8px;padding:.6rem .8rem;background:var(--panel);font-size:.93rem}
+.band{margin:10px 0 4px;padding:.6rem .8rem;border:2px dashed var(--warn);background:var(--warn-soft);border-radius:8px;font-size:.92rem}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin:.4rem 0}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;margin:.2rem 0 .6rem}
+.crumbs span{font-size:.8rem;background:var(--tint);border-radius:999px;padding:.05rem .6rem;color:var(--muted)}
+.res{border-left:4px solid var(--teal);padding:.2rem 0 .2rem .9rem;margin:.4rem 0 .8rem}
+.res .rt{font-size:1.15rem;font-weight:700;margin:0}
+
+/* roles */
+.roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:.6rem 0 1rem}
+.role{border:1px solid var(--line);border-left:5px solid var(--teal);border-radius:10px;padding:.85rem 1rem;background:var(--panel)}
+.role .rh{display:flex;gap:.75rem;align-items:center}
+.role h3{margin:0;font-size:1.02rem}
+.role .job{color:var(--muted);font-size:.86rem;line-height:1.5}
+.role ul{margin:.6rem 0 0;padding-left:1.1rem;font-size:.92rem}
+
+/* checklist */
+.chk{list-style:none;padding:0;margin:.3rem 0}
+.chk li{display:grid;grid-template-columns:auto 1fr;gap:.1rem .7rem;padding:.6rem .1rem;border-bottom:1px solid var(--line)}
+.chk input{width:1.15rem;height:1.15rem;margin-top:.35rem;accent-color:var(--teal)}
+.chk label{cursor:pointer}
+.chk .f{font-weight:700}
+.chk .ex{grid-column:2;font-size:.88rem;color:var(--muted)}
+.prog{font-weight:700;color:var(--teal)}
+
+.foot{padding-bottom:28px;font-size:.85rem;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1 id="title"></h1>
+  <p class="sub">我們怎麼決定修什麼、怎麼放版、放到哪裡。</p>
+  <div class="meta" id="meta"></div>
+  <div class="legend" id="legend"></div>
+</div></header>
+<nav class="railbar" aria-label="流程位置"><div class="wrap">
+  <ol class="rail" id="rail"></ol>
+  <p class="here" id="here"></p>
+</div></nav>
+<div class="tabbar"><div class="wrap"><div class="tabs" role="tablist" aria-label="章節" id="tabs"></div></div></div>
+<main class="wrap" id="main"></main>
+<footer class="wrap foot"><p>要修改內容：打開這個檔案，改最上面的 <code>GUIDE</code> 物件。</p></footer>
+
+<script>
+/* =====================================================================
+   GUIDE：所有內容都在這裡。改內容只改這個物件。
+   ===================================================================== */
+const GUIDE = {
+  meta: {
+    title: 'Release & Issue Triage 指南',
+    version: 'v0.5',
+    date: '2026-10-02',
+    sources: ['Release Strategy template v0.12', 'Issue Triage SOP v1.12']
+  },
+
+  legend: [['✅', '已定'], ['💡', '建議，待確認'], ['⏳', '待決'], ['🔧', '待填']],
+
+  /* 角色與頭像顏色。文字裡寫 [[RM]] 就會顯示頭像。 */
+  roles: [
+    { id: 'PO', name: 'Product Owner', short: 'PO', color: '#2f6db5',
+      job: '決定要什麼', alias: 'Project lead、每位 SM 都是 PO；PO 有好幾位',
+      does: ['預設當 Triage Owner，主持 Triage ✅', '和 user 談定 acceptance criteria ✅', 'Pilot 簽核（和 user 一起）✅',
+             '每批放哪些 phase（和 RM 一起）✅', '和 user 協議 special route 💡'] },
+    { id: 'RM', name: 'Release Manager', short: 'RM', color: '#08786f',
+      job: '決定怎麼放', alias: '',
+      does: ['PRR 把關 ✅', 'Blocking issue／incident 的 triage ✅', '決定跳版 ✅', '每批放哪些 phase（和 PO 一起）✅',
+             '安排部署與 fanout 💡', '決定 Hotfix 時一起確認快速 PRR 💡'] },
+    { id: 'USER', name: 'User', short: 'User', color: '#c9834a',
+      job: '驗收', alias: '使用端；和 Issue Triage v1.12 用詞一致',
+      does: ['和 PO 談定 acceptance criteria ✅', 'Pilot 簽核（和 PO 一起）✅', '同意某個版本走 special route ✅'] },
+    { id: 'TL', name: 'Tech lead', short: 'TL', color: '#6b5ca5',
+      job: '把關程式品質', alias: '用語待和 v1.12 對齊 ⏳',
+      does: ['PR 把關 ✅'] }
+  ],
+
+  /* 上方路線圖的站。tab 是點了要去的分頁。 */
+  stations: [
+    { id: 'issue', label: 'Issue', tab: 'triage' },
+    { id: 'triage', label: 'Triage', tab: 'triage' },
+    { id: 'plan', label: 'Plan', tab: 'plan' },
+    { id: 'pr', label: 'PR', tab: 'strategy' },
+    { id: 'prr', label: 'PRR', tab: 'strategy' },
+    { id: 'pilot', label: 'Pilot', tab: 'strategy' },
+    { id: 'signoff', label: '簽核', tab: 'strategy' },
+    { id: 'fanout', label: 'Fanout', tab: 'strategy' },
+    { id: 'done', label: '完成', tab: 'strategy' }
+  ],
+
+  /* 拓撲。zone: null 代表還沒填。deps 是 [parent, child]。 */
+  topology: {
+    simulated: true,
+    fabs: [
+      { id: 'FAB12', dc: ['P123', 'P456', 'P789'], zone: null },
+      { id: 'FAB14', dc: ['P123', 'P456', 'P78'], zone: ['14A（P1–P4）', '14B（P5–P8）'] },
+      { id: 'FAB15', dc: ['P123', 'P456', 'P7'], zone: ['15A（P1–P4）', '15B（P5–P7）'] },
+      { id: 'FAB18', dc: ['P123', 'P456', 'P78'], zone: ['18A（P1–P5）', '18B（P6–P8）'] },
+      { id: 'FAB22', dc: ['P12'], zone: null },
+      { id: 'FAB23', dc: ['P12'], zone: null }
+    ],
+    deps: [['FAB12', 'FAB14'], ['FAB14', 'FAB18'], ['FAB15', 'FAB22'], ['FAB15', 'FAB23']]
+  },
+
+  /* 模擬器參數 */
+  sim: { pilotWeeks: 2, fanoutWeeks: 1, trainWeeks: 4, maxVersions: 3 },
+
+  /* Issue Triage（摘自 v1.12） */
+  triage: {
+    assess: [
+      { t: '影響 Impact', o: '→ Severity（Sev1–Sev4）與影響範圍' },
+      { t: '急迫性 Urgency', o: '→ Priority（P1–P4）與最晚解決時間' },
+      { t: '可行性 Feasibility', o: '→ workaround 能撐多久、最快安全交付' }
+    ],
+    stopBleed: '**並行，不等決定：**線上影響持續或擴大 → 立即止血。Decide 只確認止血方式和 Owner。',
+    questions: [
+      { id: 'q1', q: '資訊夠決定嗎？', help: 'Severity、Priority、三個時間（最晚解決、workaround 能撐到、最快安全交付）都抓得到嗎？',
+        opts: [{ l: '不夠', exit: 'investigate' }, { l: '夠', next: 'q2' }] },
+      { id: 'q2', q: '要改 code 嗎？', help: '只改環境或純服務申請，都算不改 code。',
+        opts: [{ l: '不用', exit: 'service' }, { l: '要', next: 'q3' }] },
+      { id: 'q3', q: '修復，還是新功能？', help: '新功能，或需要完整整合，都算新功能。',
+        opts: [{ l: '新功能', exit: 'formal' }, { l: '修復', next: 'q4' }] },
+      { id: 'q4', q: '修復：比時間，選路徑', help: '把「最晚解決、workaround 能撐到」和「最快安全交付、下一個 Patch 窗口」放一起看。',
+        opts: [{ l: '撐不到下一個 Patch 窗口', exit: 'hotfix' }, { l: '撐得到近期 Patch 窗口', exit: 'patch' }, { l: '可以等到正式版', exit: 'defer' }] }
+    ],
+    exits: {
+      investigate: { t: '限時調查', d: '指定調查人和回 Triage 的時間，不硬填版本。', train: '還不上車。' },
+      service: { t: '服務處理', d: '例如 Operation Change。完成處理後驗證，結束。', train: '不出版。' },
+      formal: { t: 'Formal Release', d: '新功能走正式版，先出 Beta 做 pilot。', train: '搭班車；完整 PRR；Beta pilot 簽核後 fanout。' },
+      hotfix: { t: 'Hotfix', d: '必要驗證與核准完成就出。', train: '不等班車；PR 加速但品質不降；快速版 PRR 💡。' },
+      patch: { t: 'Scheduled Patch', d: '進下一班修補。', train: '下一班車；完整 PRR，只審這次改的部分 💡。' },
+      defer: { t: '延到 Formal Release', d: '要寫理由、等待風險、接受者；不能只為了少走一次流程。', train: '搭正式版那班車。' }
+    }
+  },
+
+  /* 分頁。rail 是要點亮的站：'all' 或站 id 陣列。 */
+  tabs: [
+    { id: 'why', label: '為什麼', rail: 'all', here: '整條線的全貌',
+      blocks: [
+        { type: 'key', text: '三樣東西，各管一件事。**Issue Triage** 決定「這個問題怎麼處理」；**Release Strategy** 定「平常怎麼放版」；**Release Plan** 寫「這一次怎麼放」。' },
+        { type: 'h', text: '從問題到上線，一條線走完' },
+        { type: 'flow', steps: [
+          { t: 'Issue 進來', s: '使用者回報、監控告警、incident', d: '任何要處理的問題，都從這裡開始。' },
+          { t: 'Issue Triage', s: '評估三項，做一個決定', d: '決定走哪條路：Hotfix、Scheduled Patch、Formal Release、限時調查或服務處理。見「Issue Triage」分頁。' },
+          { t: 'Release Plan', s: '這一次：放什麼、放哪裡、誰簽', d: '每個版本填一份，欄位由 Release Strategy 規定。見「Release Plan」分頁。' },
+          { t: 'PR／PRR', s: '程式碼審查、上線準備審查', d: 'PR 由 [[TL]] 把關；PRR 由 [[RM]] 把關。兩關都過，才能進 release。' },
+          { t: 'Pilot（Beta）', s: '先在一個點試跑，就是 UAT', d: '[[PO]] 和 [[USER]] 都簽核，才能往下。' },
+          { t: 'Fanout', s: '分天放到整廠，再照依賴放到其他廠', d: '見「Release Strategy」分頁。' },
+          { t: '完成', s: '所有 fab 都放完' }
+        ] },
+        { type: 'note', text: 'Release Strategy 是這整條線的規則書：每一步的條件都寫在裡面。' },
+        { type: 'table', title: '沒有規則時，常見的問題', head: ['問題', '會發生什麼', '誰來解'], rows: [
+          ['這個問題要 Hotfix 還是等 Patch，每次都要吵', '決定慢；或太急，造成第二次事故', 'Issue Triage'],
+          ['每次放版，都重新討論順序', '慢，又容易漏掉某個廠', 'Release Strategy'],
+          ['廠和廠有依賴，先放誰不清楚', 'Child 廠比 parent 先出事', 'Release Strategy'],
+          ['線上同時有好幾個版本', '不知道哪個廠在哪一版；Hotfix 要補好幾次', 'Release Strategy'],
+          ['誰簽核、驗收標準是什麼，沒寫下來', '出事時查不到原因', 'Release Plan']
+        ] },
+        { type: 'table', title: '三樣東西比一比', head: ['名稱', '回答什麼', '多久一份', '像什麼'], rows: [
+          ['Issue Triage', '這個問題怎麼處理、走哪條路', '每張 ticket 一次', '醫院掛號分診'],
+          ['Release Strategy', '平常怎麼放版', '很少改', '交通規則'],
+          ['Release Plan', '這一次怎麼放', '每個版本一份', '這一班車的行程表']
+        ] }
+      ] },
+
+    { id: 'topo', label: '我們的拓撲', rail: ['pilot', 'fanout'], here: '部署會發生在哪裡',
+      blocks: [
+        { type: 'key', text: '每個 fab 都有兩種部署：**package-dc** 放到 DC（資料中心），**package-zone** 放到 A／B 分區。廠和廠之間有 parent／child 依賴。' },
+        { type: 'table', title: '名詞', head: ['名詞', '意思'], rows: [
+          ['Fab', '一個廠，例如 FAB14'],
+          ['Phase', '廠裡的一期，例如 P1。dc 最小的部署單位'],
+          ['DC', '資料中心。一個 DC 對應幾個 phase，例如 P123'],
+          ['Zone', '廠的 A／B 分區，例如 14A'],
+          ['package-dc', '部署到 DC 的 package；走季班車'],
+          ['package-zone', '部署到 zone 的 package；走月班車'],
+          ['部署目標', '一次部署的範圍。dc 可以小到單一 phase（`FAB14-P1`）；zone 例如 `FAB14A`'],
+          ['Parent／Child', 'Child 廠要等 parent 廠達到條件，才能開始'],
+          ['班車', '固定時間出發的出版時段。趕上就上車，趕不上等下一班'],
+          ['PR', 'Pull Request：程式碼合併請求，要審查才能合併'],
+          ['PRR', 'Production Readiness Review：上線準備審查，確認可以安全上線'],
+          ['Pilot run', '用 Beta 版先在一個目標試跑。就是 UAT（使用者驗收測試），也就是 staging'],
+          ['Fanout', 'Pilot 通過後，放到同廠其他所有目標'],
+          ['Progressive rollout', '分批、分天上線，不一次全部放'],
+          ['Special route', '單一版本不走 package 的預設路線；要和 user 協議'],
+          ['Acceptance criteria', '驗收標準。Pilot 開始前和 user 談定'],
+          ['Blocking issue', '擋住上線的問題，包括 incident']
+        ] },
+        { type: 'topology', title: 'Fab 依賴圖' },
+        { type: 'fabtable', title: 'Fab、DC、Zone 對照表' },
+        { type: 'table', title: '已知條件', head: ['條件', '內容', '狀態'], rows: [
+          ['班車', 'package-dc 季班車；package-zone 月班車', '✅'],
+          ['每個 fab', '都有 dc 和 zone 兩種部署', '✅'],
+          ['預設路線', '每廠 pilot；package 也可以預設首廠 pilot', '✅'],
+          ['Pilot 時間', '一般 2 週，可長可短', '✅'],
+          ['版本上限', '每個 package 線上最多 3 版，含 pilot 中的 Beta', '✅'],
+          ['分天放', '同一廠的 dc 目標不在同一天放', '✅'],
+          ['禁止變更日', '週五、放假前一天', '✅'],
+          ['跨班車', 'Rollout 不用趕在下一班車前完成', '✅'],
+          ['FAB21', '只出現在舊表，先視為不在範圍', '💡']
+        ] }
+      ] },
+
+    { id: 'strategy', label: 'Release Strategy', rail: ['pr', 'prr', 'pilot', 'signoff', 'fanout', 'done'], here: 'PR 到完成，每一步的規則',
+      blocks: [
+        { type: 'key', text: '每個 package 搭固定班車。先過 PR、PRR 兩關，再用 Beta 在一個點 pilot；簽核後分天 fanout，照廠的依賴一路放完。' },
+        { type: 'h', text: '一個版本怎麼走完' },
+        { type: 'flow', steps: [
+          { t: '前置條件：PR＋PRR', s: 'PR：[[TL]]；PRR：[[RM]]', d: 'PR：程式碼審查通過。PRR：上線準備審查通過。兩關都過，才能進 release。' },
+          { t: 'Pilot run（Beta）', s: '用 Beta 在一個目標試跑，例如 f14p1、f14a', d: 'Pilot run 就是 UAT，也就是 staging。一般 2 週。Beta 版號加 `-beta.N`。' },
+          { t: '簽核', s: '[[PO]] ＋ [[USER]]', d: '兩個條件都要滿足：① 沒有 blocking issue（包括 incident，由 [[RM]] triage）；② 開始前談定的 acceptance criteria 全部滿足。' },
+          { t: 'Fanout', s: '分天放到該廠所有 phase（dc）或 zone', d: '一天一批，例如 Day 1 P12 → Day 2 P34 → Day 3 P456。每批放哪些 phase，由 [[PO]] ＋ [[RM]] 決定。週五和放假前一天不放。' },
+          { t: '下一個廠', s: '照 parent／child 條件開始', d: '每廠 pilot：parent 第一個 pilot 驗證完成，child 就能開始 pilot。首廠 pilot：parent fanout 完成的下一週，child 直接 fanout。' },
+          { t: '完成', s: '所有 fab 都放完', d: 'Rollout 不用趕在下一班車前完成，但線上同一個 package 最多 3 個版本。' }
+        ] },
+
+        { type: 'h', text: '版本與班車' },
+        { type: 'table', head: ['規則', '內容', '狀態'], rows: [
+          ['格式', 'CalVer（用日期當版號）：`YYYY.MM.PATCH`', '✅'],
+          ['各自編號', 'package-dc、package-zone 各有自己的版號', '✅'],
+          ['標示 package', '版號前加 package 名，避免撞名：`package-dc/2026.10.0`', '💡'],
+          ['Hotfix／Patch', '共用同一組遞增的 PATCH 序號', '✅'],
+          ['Beta', '版號加 `-beta.N`；pilot 用的就是 Beta', '✅'],
+          ['Beta 轉正式', '簽核通過的那個 Beta，直接標成正式版號去 fanout，不重新 build', '💡'],
+          ['Merge 回主幹', 'Hotfix／Patch 一定 merge 回主線，並納入後續版本', '✅'],
+          ['班車', 'package-dc 季班車；package-zone 月班車', '✅'],
+          ['Hotfix', '不等班車', '✅']
+        ] },
+        { type: 'table', title: 'dc 一季一版，zone 一季三版：dc 要先準備好', head: ['規則', '內容', '狀態'], rows: [
+          ['dc 先提供', 'zone 要用的新介面，先跟 dc 季班車上線，zone 之後再用', '💡'],
+          ['dc 向後相容', 'dc 新版上線後，線上現有的 zone 版本要照常運作', '💡'],
+          ['同月兩班車', 'dc 先上、穩定後 zone 再上', '💡'],
+          ['相容表', '每個 zone 版本寫明「需要 dc 哪一版以上」', '💡'],
+          ['需求提前收', 'dc 規劃季班車時，收集 zone 未來三個月的需求', '💡']
+        ] },
+
+        { type: 'h', text: '進 release 的兩道關卡' },
+        { type: 'p', text: 'PR 由 [[TL]] 把關；PRR 由 [[RM]] 把關。✅' },
+        { type: 'table', title: '每一種出版都要 PRR，差別只在深度 💡', head: ['類型', 'PR', 'PRR', '狀態'], rows: [
+          ['Formal', '要', '完整版', '✅'],
+          ['Scheduled Patch', '要', '完整版，但只審這次改的部分', '💡'],
+          ['Hotfix', '要；可以加速，品質要求不降', '快速版（下表），[[RM]] 在 triage 時一起確認', 'PR ✅、PRR 💡'],
+          ['Beta', '要', '要；Beta 進 pilot 前的 PRR，就是這個版本的 PRR', '要 ✅、合併 💡']
+        ] },
+        { type: 'table', title: 'Hotfix 快速版 PRR 💡', head: ['檢查', '要回答的問題'], rows: [
+          ['範圍小', '只修這個問題，沒有夾帶其他修改？'],
+          ['能退回', '退回方法確認過了嗎？'],
+          ['看得到', '上線後看哪些指標，確認真的修好？'],
+          ['有測試', '修正本身有測試；受影響的舊功能有回歸測試（確認舊功能沒被弄壞）？']
+        ] },
+
+        { type: 'h', text: '兩種路線' },
+        { type: 'table', title: '每個 package 選一種當預設 ✅', head: ['項目', '每廠 pilot', '首廠 pilot'], rows: [
+          ['做法', '每個 fab 先 pilot 再 fanout', '只有第一個 fab pilot，其他直接 fanout'],
+          ['Child 開始', 'Parent 第一個 pilot 驗證完成', 'Parent fanout 完成的下一週'],
+          ['Child fanout', '自己的 pilot 通過', '開始就 fanout'],
+          ['特點', '慢，每廠都驗證過', '快，只驗證一次']
+        ] },
+        { type: 'table', head: ['規則', '內容', '狀態'], rows: [
+          ['預設路線', '每個 package 選一種', '✅'],
+          ['每廠 → 首廠', '單一版本要少做 pilot，要和 user 協議（special route）', '✅'],
+          ['首廠 → 每廠', '單一版本要多做 pilot，[[RM]] 可以直接決定', '💡'],
+          ['「下一週」', 'Parent 在第 N 週完成 fanout，child 最早第 N+1 週開始', '💡']
+        ] },
+        { type: 'sim', title: '試試看：兩種路線要幾週？' },
+
+        { type: 'h', text: 'Pilot（UAT）驗收' },
+        { type: 'table', title: '兩個條件都滿足、兩方都簽核，才算通過 ✅', head: ['項目', '內容'], rows: [
+          ['觀察期', '一般 2 週，可以更長或更短'],
+          ['條件 1', '沒有 blocking issue（包括 incident），由 [[RM]] triage'],
+          ['條件 2', '開始前和 user 談定的 acceptance criteria 全部滿足'],
+          ['簽核', '[[PO]] ＋ [[USER]]'],
+          ['前置', 'Acceptance criteria 在 pilot 開始前寫好，並經 user 確認']
+        ] },
+
+        { type: 'h', text: '多版本並存與跳版' },
+        { type: 'slots', title: '線上最多 3 版：點按鈕，看版本怎麼往前推', start: 9 },
+        { type: 'table', head: ['規則', '內容', '狀態'], rows: [
+          ['上限', '同一個 package 線上最多 3 版，含 pilot 中的 Beta', '✅'],
+          ['可調整', '上限是預設值', '✅'],
+          ['按 package 調整', '每個 package 可以設自己的上限', '💡'],
+          ['達上限時', '新版不能開始 pilot，要等最舊版本從線上消失', '💡'],
+          ['跳版', '可以選；預設依序；舊版還沒到、新版已經來了，就裝新版', '✅'],
+          ['誰決定跳版', '[[RM]]', '✅'],
+          ['跳版前提', '新版包含舊版所有修改；資料庫變更能一次跳兩版', '💡'],
+          ['退版目標', '退回該 fab 原本的版本，不是中間版本', '💡']
+        ] },
+
+        { type: 'h', text: '禁止變更日' },
+        { type: 'freeze', days: [['週一', '可以'], ['週二', '可以'], ['週三', '可以'], ['週四', '可以'], ['週五', '禁止']], extra: [['放假前一天', '禁止']] },
+        { type: 'note', text: '緊急 Hotfix 或退版遇到禁止日能不能做：⏳ 待決。' },
+
+        { type: 'h', text: '退版 ⏳' },
+        { type: 'table', title: '已定的只有「退回舊版」。細節待決，但不擋其他規則。', head: ['項目', '狀態'], rows: [
+          ['出問題時退回舊版', '✅'],
+          ['退版方式（重新部署、GitOps 切回或其他）', '⏳'],
+          ['多久要退完', '⏳'],
+          ['誰下決定', '⏳'],
+          ['資料相容：新版的資料庫變更，舊版還能不能讀', '⏳']
+        ] },
+        { type: 'note', text: 'GitOps：用 Git 裡的設定自動同步環境。退版規則會影響 pilot、版本上限和跳版。' }
+      ] },
+
+    { id: 'plan', label: 'Release Plan', rail: ['plan'], here: '這一班車的作業單',
+      blocks: [
+        { type: 'key', text: 'Release Plan 是這一班車的作業單。每個版本填一份，欄位由 Release Strategy 規定。' },
+        { type: 'flow', steps: [
+          { t: 'Issue Triage', s: '決定走哪條路' },
+          { t: 'Release Plan', s: '照下面的欄位填一份', cur: true },
+          { t: 'PR／PRR', s: '過兩道關卡' },
+          { t: 'Pilot → Fanout', s: '照 Plan 執行' }
+        ] },
+        { type: 'checklist', title: '必填欄位（可以勾選檢查）', items: [
+          ['Package 與版號', '哪個 package、哪一版', '`package-zone/2026.11.0`'],
+          ['出版類型', 'Formal／Scheduled Patch／Hotfix／Beta', 'Formal；先出 `2026.11.0-beta.1` 做 pilot'],
+          ['前置條件', 'PR、PRR 完成紀錄與把關人', 'PR 11/02（[[TL]]）；PRR 11/04（[[RM]]）'],
+          ['路線', '每廠 pilot／首廠 pilot；走 special route 要附 user 同意', '每廠 pilot（預設）'],
+          ['Acceptance criteria', 'Pilot 前和 user 談定', '3 條，user 11/05 確認'],
+          ['部署順序', '每廠 pilot 目標、fanout 批次、parent／child 開始條件', 'FAB14：pilot f14a → fanout 14B'],
+          ['每廠升級路徑', '依序或跳版；跳版附 RM 決定與理由', 'FAB18：10 月版 → 11 月版（依序）'],
+          ['每廠退版目標', '出事時退回哪一版', 'FAB18 → `package-zone/2026.10.0`'],
+          ['相容版本', '這個 zone 版本需要的 dc 最低版本', '`package-dc/2026.10.0` 以上'],
+          ['時程', 'Pilot 開始、預計簽核、每天 fanout 哪一批；避開禁止變更日', 'Pilot 11/09–11/20；fanout 11/23（週一）起'],
+          ['負責人', 'PO（只寫一位）、RM', '[[PO]]、[[RM]]']
+        ] },
+        { type: 'note', text: '範例都是假資料，只示範怎麼填。' }
+      ] },
+
+    { id: 'triage', label: 'Issue Triage', rail: ['issue', 'triage'], here: '問題進來後，決定走哪條路',
+      blocks: [
+        { type: 'key', text: 'Triage＝Assess 三項＋Decide 一個決定。評估完就決定，不再交給另一個流程。止血不等任何評估。' },
+        { type: 'triage' },
+        { type: 'table', title: '出口接到 Release Strategy', head: ['出口', '搭什麼車', 'PRR'], rows: [
+          ['Hotfix', '不等班車', '快速版 💡'],
+          ['Scheduled Patch', '下一班車', '完整版，只審差異 💡'],
+          ['Formal Release', '班車；先 Beta pilot', '完整版'],
+          ['延到 Formal', '正式版那班車', '完整版；要寫理由、等待風險、接受者'],
+          ['限時調查', '還不上車', '—'],
+          ['服務處理', '不出版', '—']
+        ] },
+        { type: 'table', title: 'Triage 裡的角色', head: ['角色', '做什麼'], rows: [
+          ['Triage Owner', '預設是受理 team 的 [[PO]]，主持 Triage'],
+          ['Ticket Owner', 'Triage 指派，通常是處理的工程師；對使用者只有這一個窗口'],
+          ['[[RM]]', 'Blocking issue／incident 的 triage；決定 Hotfix 時一起確認快速 PRR 💡'],
+          ['[[PO]]', '和 [[RM]] 一起確認 Beta 的範圍與日期']
+        ] },
+        { type: 'note', text: '完整五個步驟、Severity 和 Priority 的定義，見 Issue Triage SOP v1.12。' }
+      ] },
+
+    { id: 'roles', label: '角色', rail: 'all', here: '誰決定什麼',
+      blocks: [
+        { type: 'key', text: '責任角色只有兩個：[[PO]] 決定要什麼，[[RM]] 決定怎麼放。其他人提供評估，或一起簽核。' },
+        { type: 'p', text: 'Project lead 和每位 SM 都是 PO，所以 PO 有好幾位。✅ 每張 ticket、每份 Release Plan 只寫一位 PO。💡' },
+        { type: 'table', title: '一句話分工', head: ['角色', '管什麼', '把關點'], rows: [
+          ['[[PO]]', '做對的事：要什麼、驗收過了沒', 'Triage、acceptance criteria、pilot 簽核'],
+          ['[[TL]]', '把事做對：程式寫得好不好', 'PR'],
+          ['[[RM]]', '安全地放上去：怎麼放、什麼時候放', 'PRR、blocking issue、fanout、跳版']
+        ] },
+        { type: 'roles' },
+        { type: 'table', title: '決策對照', head: ['決策', '誰', '狀態'], rows: [
+          ['PR 把關', '[[TL]]', '✅'],
+          ['PRR 把關', '[[RM]]', '✅'],
+          ['主持 Triage（Triage Owner）', '受理 team 的 [[PO]]', '✅'],
+          ['每張 ticket、每份 Release Plan 的 PO', '只寫一位', '💡'],
+          ['和 user 談定 acceptance criteria', '[[PO]]', '✅'],
+          ['Pilot（UAT）簽核', '[[PO]] ＋ [[USER]]', '✅'],
+          ['Blocking issue／incident 的 triage', '[[RM]]', '✅'],
+          ['跳版', '[[RM]]', '✅'],
+          ['分天時每批放哪些 phase', '[[PO]] ＋ [[RM]]', '✅'],
+          ['單一版本走 special route', '[[PO]] 和 [[USER]] 協議，[[RM]] 確認可行', '💡'],
+          ['安排部署與 fanout', '[[RM]]', '💡']
+        ] }
+      ] },
+
+    { id: 'todo', label: '待決', rail: [], here: '正式啟用前要補齊的東西',
+      blocks: [
+        { type: 'key', text: '⏳ 是還沒決定的規則，🔧 是要補的資料。這些不擋其他章節，但正式啟用前要補齊。' },
+        { type: 'table', head: ['項目', '類型', '在哪一頁'], rows: [
+          ['Parent／Child 真實對照', '🔧', '我們的拓撲'],
+          ['FAB12、FAB22、FAB23 的 zone 目標', '🔧', '我們的拓撲'],
+          ['產品歸屬：每個產品屬於哪個 package、預設路線', '🔧', 'Release Strategy'],
+          ['PRR 檢查清單（建議沿用 Package Baseline 四個維度 💡）', '🔧', 'Release Strategy'],
+          ['退版規則：方式、時間、誰決定、資料相容', '⏳', 'Release Strategy'],
+          ['Hotfix 要補到線上哪幾個版本', '⏳', 'Release Strategy'],
+          ['緊急 Hotfix 或退版，遇到禁止變更日能不能做', '⏳', 'Release Strategy'],
+          ['Pilot 中出了 `-beta.2`，pilot 要重算還是接著算', '⏳', 'Release Strategy'],
+          ['首廠 pilot → 每廠 pilot，要不要 user 協議', '⏳', 'Release Strategy'],
+          ['Issue Triage v1.12 寫 Beta「可選用」；這裡 pilot 一律用 Beta，要對齊', '⏳', 'Issue Triage'],
+          ['Tech lead 用語，和 v1.12 的用語規則對齊', '⏳', '角色'],
+          ['Issue Triage SOP v1.12 的 Triage Owner 從 SM 改成 PO，要同步', '⏳', 'Issue Triage'],
+          ['所有 💡 建議逐條確認', '💡', '全部']
+        ] }
+      ] }
+  ]
+};
+</script>
+
+<script>
+/* =====================================================================
+   渲染程式。通常不用改。
+   ===================================================================== */
+(function () {
+  'use strict';
+  const G = GUIDE;
+  const ROLE = {};
+  G.roles.forEach(r => { ROLE[r.id] = r; });
+  let uid = 0;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function plain(s) { return String(s || '').replace(/\*\*|`|\[\[|\]\]/g, ''); }
+  function avatar(id, size) {
+    const r = ROLE[id];
+    if (!r) return '';
+    return '<svg class="av" width="' + size + '" height="' + size + '" viewBox="0 0 40 40" aria-hidden="true">' +
+      '<circle cx="20" cy="20" r="20" fill="' + r.color + '"/>' +
+      '<circle cx="20" cy="15.5" r="6.5" fill="#fff" fill-opacity=".92"/>' +
+      '<path d="M8 34.5c1.8-6.5 6.6-9.5 12-9.5s10.2 3 12 9.5" fill="#fff" fill-opacity=".92"/></svg>';
+  }
+  function who(id) {
+    const r = ROLE[id];
+    return '<span class="who">' + avatar(id, 20) + '<span>' + esc(r.short) + '</span></span>';
+  }
+  function fmt(s) {
+    if (s == null) return '';
+    let t = esc(s);
+    t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/\[\[(\w+)\]\]/g, (m, id) => (ROLE[id] ? who(id) : m));
+    return t;
+  }
+  function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function title3(b, extra) { return b.title ? '<h3>' + fmt(b.title) + (extra || '') + '</h3>' : ''; }
+
+  /* ---------- topology helpers ---------- */
+  function fabIds() { return G.topology.fabs.map(f => f.id); }
+  function parentsMap() {
+    const m = {};
+    fabIds().forEach(f => { m[f] = []; });
+    G.topology.deps.forEach(([p, c]) => { if (m[c] && m[p]) m[c].push(p); });
+    return m;
+  }
+  function childrenMap() {
+    const m = {};
+    fabIds().forEach(f => { m[f] = []; });
+    G.topology.deps.forEach(([p, c]) => { if (m[p] && m[c]) m[p].push(c); });
+    return m;
+  }
+  function depthMap() {
+    const P = parentsMap(), d = {};
+    function dep(f, seen) {
+      if (d[f] != null) return d[f];
+      if (seen.has(f)) return 0;
+      seen.add(f);
+      const ps = P[f];
+      d[f] = ps.length ? 1 + Math.max.apply(null, ps.map(p => dep(p, seen))) : 0;
+      return d[f];
+    }
+    fabIds().forEach(f => dep(f, new Set()));
+    return d;
+  }
+  function topoOrder() {
+    const d = depthMap();
+    return fabIds().map((f, i) => [f, i]).sort((a, b) => (d[a[0]] - d[b[0]]) || (a[1] - b[1])).map(x => x[0]);
+  }
+  function validateTopo() {
+    const ids = new Set(fabIds()), errs = [];
+    G.topology.deps.forEach(([p, c]) => {
+      if (!ids.has(p)) errs.push('deps 裡的 ' + p + ' 不在 fabs 清單');
+      if (!ids.has(c)) errs.push('deps 裡的 ' + c + ' 不在 fabs 清單');
+      if (p === c) errs.push(p + ' 不能依賴自己');
+    });
+    const P = parentsMap(), st = {};
+    let cyc = false;
+    function dfs(f) { if (st[f] === 1) { cyc = true; return; } if (st[f] === 2) return; st[f] = 1; P[f].forEach(dfs); st[f] = 2; }
+    fabIds().forEach(dfs);
+    if (cyc) errs.push('依賴形成迴圈（A 等 B、B 又等 A），請檢查 deps');
+    return errs;
+  }
+  function warnBox(errs) { return '<p class="note warn">拓撲資料有問題：' + errs.map(esc).join('；') + '</p>'; }
+  function schedule(route, P, F, pilotFab) {
+    const par = parentsMap(), s = {};
+    const order = route === 'first' ? [pilotFab].concat(topoOrder().filter(x => x !== pilotFab)) : topoOrder();
+    order.forEach(f => {
+      if (route === 'each') {
+        const ps = par[f].filter(p => s[p]);
+        const start = ps.length ? Math.max.apply(null, ps.map(p => s[p].pilotEnd + 1)) : 1;
+        s[f] = { pilotStart: start, pilotEnd: start + P - 1, fanStart: start + P, fanEnd: start + P + F - 1 };
+      } else if (f === pilotFab) {
+        s[f] = { pilotStart: 1, pilotEnd: P, fanStart: P + 1, fanEnd: P + F };
+      } else {
+        const ps = par[f].filter(p => s[p]);
+        const start = ps.length ? Math.max.apply(null, ps.map(p => s[p].fanEnd + 1)) : s[pilotFab].fanEnd + 1;
+        s[f] = { pilotStart: null, pilotEnd: null, fanStart: start, fanEnd: start + F - 1 };
+      }
+    });
+    return { s: s, order: order };
+  }
+
+  /* ---------- block renderers ---------- */
+  const R = {
+    key: b => el('p', 'key', fmt(b.text)),
+    h: b => el('h2', '', fmt(b.text)),
+    h3: b => el('h3', '', fmt(b.text)),
+    p: b => el('p', '', fmt(b.text)),
+    note: b => el('p', 'note' + (b.tone ? ' ' + b.tone : ''), fmt(b.text)),
+
+    table: function (b) {
+      const w = el('div', 'tbl');
+      let h = title3(b);
+      h += '<div class="tw" tabindex="0" role="region" aria-label="' + esc(plain(b.title) || '表格') + '"><table><thead><tr>' +
+        b.head.map(x => '<th scope="col">' + fmt(x) + '</th>').join('') + '</tr></thead><tbody>' +
+        b.rows.map(r => '<tr>' + r.map((c, i) => i === 0 ? '<th scope="row">' + fmt(c) + '</th>' : '<td>' + fmt(c) + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table></div>';
+      if (b.note) h += '<p class="note">' + fmt(b.note) + '</p>';
+      w.innerHTML = h;
+      return w;
+    },
+
+    flow: function (b) {
+      const w = el('div', 'flow');
+      const hasDetail = b.steps.some(s => s.d);
+      let h = title3(b);
+      if (hasDetail) h += '<p class="note">點每一步，看細節。</p>';
+      h += '<ol class="vflow">';
+      b.steps.forEach((s, i) => {
+        const id = 'fd' + (++uid);
+        const tag = s.cur ? '<span class="tag">這一頁</span>' : '';
+        h += '<li class="' + (s.cur ? 'cur' : '') + '"><span class="num" aria-hidden="true">' + (i + 1) + '</span>';
+        if (s.d) {
+          h += '<button type="button" class="stp" aria-expanded="false" aria-controls="' + id + '"><span class="t">' + fmt(s.t) + '</span>' + tag +
+            '<span class="s">' + fmt(s.s || '') + '</span></button><div class="d" id="' + id + '" hidden>' + fmt(s.d) + '</div>';
+        } else {
+          h += '<div class="stp"><span class="t">' + fmt(s.t) + '</span>' + tag + '<span class="s">' + fmt(s.s || '') + '</span></div>';
+        }
+        h += '</li>';
+      });
+      h += '</ol>';
+      w.innerHTML = h;
+      w.querySelectorAll('button.stp').forEach(btn => btn.addEventListener('click', () => {
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!open));
+        document.getElementById(btn.getAttribute('aria-controls')).hidden = open;
+      }));
+      return w;
+    },
+
+    topology: function (b) {
+      const T = G.topology, P = parentsMap(), C = childrenMap(), d = depthMap();
+      const cols = [];
+      T.fabs.forEach(f => { (cols[d[f.id]] = cols[d[f.id]] || []).push(f.id); });
+      const NW = 96, NH = 38, CG = 56, RG = 18, PAD = 12;
+      const maxR = Math.max.apply(null, cols.map(c => c.length));
+      const W = PAD * 2 + cols.length * NW + (cols.length - 1) * CG;
+      const H = PAD * 2 + maxR * NH + (maxR - 1) * RG;
+      const pos = {};
+      cols.forEach((c, ci) => {
+        const off = (maxR - c.length) * (NH + RG) / 2;
+        c.forEach((f, ri) => { pos[f] = { x: PAD + ci * (NW + CG), y: PAD + off + ri * (NH + RG) }; });
+      });
+      const mk = 'topoArrow' + (++uid);
+      let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Fab 依賴圖，箭頭從 parent 指向 child">' +
+        '<defs><marker id="' + mk + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>';
+      T.deps.forEach(([p, c]) => {
+        if (!pos[p] || !pos[c]) return;
+        const a = pos[p], z = pos[c];
+        const x1 = a.x + NW, y1 = a.y + NH / 2, x2 = z.x - 2, y2 = z.y + NH / 2;
+        s += '<path class="edge" data-p="' + p + '" data-c="' + c + '" d="M' + x1 + ',' + y1 + ' C' + (x1 + CG / 2) + ',' + y1 + ' ' + (x2 - CG / 2) + ',' + y2 + ' ' + x2 + ',' + y2 + '" marker-end="url(#' + mk + ')"/>';
+      });
+      T.fabs.forEach(f => {
+        const p = pos[f.id];
+        s += '<g class="node" data-id="' + f.id + '" tabindex="0" role="button" aria-label="' + f.id + '，看詳細">' +
+          '<rect x="' + p.x + '" y="' + p.y + '" width="' + NW + '" height="' + NH + '" rx="9"/>' +
+          '<text x="' + (p.x + NW / 2) + '" y="' + (p.y + NH / 2 + 5) + '" text-anchor="middle">' + f.id + '</text></g>';
+      });
+      s += '</svg>';
+      const w = el('div', 'topo');
+      const errs = validateTopo();
+      w.innerHTML = title3(b, T.simulated ? '<span class="flag">🔧 模擬資料</span>' : '') + (errs.length ? warnBox(errs) : '') +
+        '<div class="panel">' + s + '<p class="note tinfo" aria-live="polite">點一個廠，看它的 DC、zone 和依賴。箭頭從 parent 指向 child。</p></div>';
+      const info = w.querySelector('.tinfo');
+      function select(id) {
+        w.querySelectorAll('.node').forEach(n => n.classList.toggle('sel', n.dataset.id === id));
+        w.querySelectorAll('.edge').forEach(e => e.classList.toggle('on', e.dataset.p === id || e.dataset.c === id));
+        const f = T.fabs.find(x => x.id === id);
+        info.classList.remove('note');
+        info.innerHTML = '<strong>' + id + '</strong><br>Parent：' + (P[id].length ? P[id].join('、') : '沒有（最先開始）') +
+          '<br>Child：' + (C[id].length ? C[id].join('、') : '沒有') +
+          '<br>DC：' + f.dc.map(x => '<code>' + id + '-' + x + '</code>').join('、') +
+          '<br>Zone：' + (f.zone ? f.zone.join('、') : '🔧 待填');
+      }
+      w.querySelectorAll('.node').forEach(n => {
+        n.addEventListener('click', () => select(n.dataset.id));
+        n.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(n.dataset.id); } });
+      });
+      return w;
+    },
+
+    fabtable: function (b) {
+      return R.table({
+        title: b.title,
+        head: ['Fab', 'DC（phase 群組）', 'Zone'],
+        rows: G.topology.fabs.map(f => [f.id, f.dc.join('、'), f.zone ? f.zone.join('、') : '🔧 待填'])
+      });
+    },
+
+    sim: function (b) {
+      if (validateTopo().length) return el('div', 'sim', title3(b) + warnBox(validateTopo()));
+      const S = G.sim, par = parentsMap();
+      const roots = fabIds().filter(f => par[f].length === 0);
+      let route = 'each', pw = S.pilotWeeks, pf = roots[0];
+      const w = el('div', 'sim');
+      w.innerHTML = title3(b, G.topology.simulated ? '<span class="flag">🔧 模擬依賴</span>' : '') +
+        '<div class="panel"><div class="ctrl">' +
+        '<div class="seg" role="group" aria-label="路線"><button type="button" data-r="each" aria-pressed="true">每廠 pilot</button><button type="button" data-r="first" aria-pressed="false">首廠 pilot</button></div>' +
+        '<label>Pilot <select class="pw">' + [1, 2, 3, 4].map(n => '<option value="' + n + '"' + (n === pw ? ' selected' : '') + '>' + n + ' 週</option>').join('') + '</select></label>' +
+        '<label class="pfl" hidden>首廠 <select class="pf">' + roots.map(r => '<option>' + r + '</option>').join('') + '</select></label>' +
+        '</div><div class="gw"></div><p class="sum" aria-live="polite"></p><p class="note rule"></p></div>';
+      const gw = w.querySelector('.gw'), sum = w.querySelector('.sum'), rule = w.querySelector('.rule'), pfl = w.querySelector('.pfl');
+      function draw() {
+        const r = schedule(route, pw, S.fanoutWeeks, pf), sch = r.s;
+        const T = Math.max.apply(null, Object.keys(sch).map(k => sch[k].fanEnd));
+        let h = '<div class="tw" tabindex="0" role="region" aria-label="模擬時程表"><table class="gantt"><thead><tr><th scope="col">Fab</th>';
+        for (let i = 1; i <= T; i++) h += '<th scope="col">W' + i + '</th>';
+        h += '</tr></thead><tbody>';
+        r.order.forEach(f => {
+          const x = sch[f];
+          h += '<tr><th scope="row">' + f + '</th>';
+          for (let i = 1; i <= T; i++) {
+            if (x.pilotStart && i >= x.pilotStart && i <= x.pilotEnd) h += '<td class="gp" title="Pilot">試</td>';
+            else if (i >= x.fanStart && i <= x.fanEnd) h += '<td class="gf" title="Fanout">放</td>';
+            else h += '<td></td>';
+          }
+          h += '</tr>';
+        });
+        h += '</tbody></table></div><p class="note"><span class="lg gp">試</span> Pilot（Beta）　<span class="lg gf">放</span> Fanout（分天放，算 ' + S.fanoutWeeks + ' 週）</p>';
+        gw.innerHTML = h;
+        const live = 1 + Math.ceil(T / S.trainWeeks);
+        sum.innerHTML = '全部放完：第 ' + T + ' 週。以 zone 月班車（約 ' + S.trainWeeks + ' 週一班）估算，線上同時約 ' + live + ' 個版本' +
+          (live > S.maxVersions ? '，<span class="over">超過上限 ' + S.maxVersions + '</span>。' : '；上限 ' + S.maxVersions + '。');
+        rule.innerHTML = route === 'each'
+          ? 'Child 開始條件：parent 第一個 pilot 驗證完成。'
+          : 'Child 開始條件：parent fanout 完成的下一週。沒有 parent 的廠，等首廠 fanout 完的下一週（模擬假設 💡）。';
+        pfl.hidden = route !== 'first';
+      }
+      w.querySelectorAll('.seg button').forEach(btn => btn.addEventListener('click', () => {
+        route = btn.dataset.r;
+        w.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === btn)));
+        draw();
+      }));
+      w.querySelector('.pw').addEventListener('change', e => { pw = +e.target.value; draw(); });
+      w.querySelector('.pf').addEventListener('change', e => { pf = e.target.value; draw(); });
+      draw();
+      return w;
+    },
+
+    slots: function (b) {
+      const n = G.sim.maxVersions, start = b.start || 9;
+      let base = start;
+      const m = k => ((k - 1) % 12 + 12) % 12 + 1;
+      const w = el('div', 'slotsw');
+      function label(i) {
+        if (i === n - 1) return ['月 Beta', 'Pilot 中'];
+        if (i === 0) return ['月版', '最舊：還有 fab 在用'];
+        return ['月版', 'Fanout 中'];
+      }
+      function draw(focus) {
+        let h = title3(b) + '<div class="slots" aria-live="polite">';
+        for (let i = 0; i < n; i++) {
+          const l = label(i);
+          h += '<div class="slot"><div class="v">' + m(base + i) + ' ' + l[0] + '</div><div class="st">' + l[1] + '</div></div>';
+        }
+        h += '<div class="slot wait"><div class="v">' + m(base + n) + ' 月版</div><div class="st">等待：線上已有 ' + n + ' 版，不能開始 pilot</div></div></div>' +
+          '<div class="ctrl"><button type="button" class="btn adv">' + m(base) + ' 月版清掉（fab 都升級或跳版）</button><button type="button" class="btn ghost rs">重來</button></div>';
+        w.innerHTML = h;
+        w.querySelector('.adv').addEventListener('click', () => { base++; draw(true); });
+        w.querySelector('.rs').addEventListener('click', () => { base = start; draw(true); });
+        if (focus) w.querySelector('.adv').focus();
+      }
+      draw(false);
+      return w;
+    },
+
+    freeze: function (b) {
+      const box = ([d, s]) => '<div class="day' + (s === '禁止' ? ' no' : '') + '"><b>' + esc(d) + '</b>' + esc(s) + '</div>';
+      return el('div', 'frz', '<div class="week">' + b.days.map(box).join('') + '</div><div class="extra">' + (b.extra || []).map(box).join('') + '</div>');
+    },
+
+    triage: function () {
+      const T = G.triage;
+      const w = el('div', 'tri');
+      let h = '<h3>Assess：三項評估</h3><div class="assess">' +
+        T.assess.map((a, i) => '<div class="acard"><b>' + (i + 1) + '. ' + fmt(a.t) + '</b><br>' + fmt(a.o) + '</div>').join('') + '</div>';
+      h += '<div class="band">' + fmt(T.stopBleed) + '</div>';
+      h += '<h3>Decide：照順序問四題，每題都有出口</h3><ol class="vflow">';
+      T.questions.forEach((q, i) => {
+        h += '<li><span class="num" aria-hidden="true">' + (i + 1) + '</span><div class="stp"><span class="t">' + fmt(q.q) + '</span><span class="s">' +
+          q.opts.map(o => fmt(o.l) + ' → ' + (o.exit ? '<strong>' + fmt(T.exits[o.exit].t) + '</strong>' : '下一題')).join('；') + '</span></div></li>';
+      });
+      h += '</ol><h3>試試看：一題一題點</h3><div class="panel wz" aria-live="polite"></div>';
+      w.innerHTML = h;
+      const wz = w.querySelector('.wz');
+      let path = [];
+      function crumbs() { return path.length ? '<p class="crumbs">' + path.map(p => '<span>' + fmt(p) + '</span>').join('') + '</p>' : ''; }
+      function show(qid, focus) {
+        const q = T.questions.find(x => x.id === qid);
+        wz.innerHTML = crumbs() + '<p><strong>' + fmt(q.q) + '</strong></p><p class="note">' + fmt(q.help) + '</p><div class="opts">' +
+          q.opts.map((o, i) => '<button type="button" class="btn ghost" data-i="' + i + '">' + fmt(o.l) + '</button>').join('') + '</div>';
+        wz.querySelectorAll('.opts button').forEach(btn => btn.addEventListener('click', () => {
+          const o = q.opts[+btn.dataset.i];
+          path.push(q.q + ' ' + o.l);
+          if (o.exit) result(o.exit); else show(o.next, true);
+        }));
+        if (focus) wz.querySelector('.opts button').focus();
+      }
+      function result(eid) {
+        const e = T.exits[eid];
+        wz.innerHTML = crumbs() + '<div class="res"><p class="rt">' + fmt(e.t) + '</p><p>' + fmt(e.d) + '</p><p><strong>接到 Release Strategy：</strong>' + fmt(e.train) + '</p></div>' +
+          '<button type="button" class="btn ghost again">重來</button>';
+        const again = wz.querySelector('.again');
+        again.addEventListener('click', () => { path = []; show(T.questions[0].id, true); });
+        again.focus();
+      }
+      show(T.questions[0].id, false);
+      return w;
+    },
+
+    checklist: function (b) {
+      const w = el('div', 'ckw'), n = b.items.length, pre = 'ck' + (++uid) + '-';
+      w.innerHTML = title3(b) + '<p class="prog" aria-live="polite">已確認 0／' + n + '</p><ul class="chk">' +
+        b.items.map((it, i) => '<li><input type="checkbox" id="' + pre + i + '"><label for="' + pre + i + '"><span class="f">' + fmt(it[0]) + '</span>　' + fmt(it[1]) + '</label>' +
+          '<span class="ex">範例：' + fmt(it[2]) + '</span></li>').join('') + '</ul>';
+      const prog = w.querySelector('.prog');
+      w.querySelectorAll('input').forEach(c => c.addEventListener('change', () => {
+        prog.textContent = '已確認 ' + w.querySelectorAll('input:checked').length + '／' + n;
+      }));
+      return w;
+    },
+
+    roles: function () {
+      return el('div', 'roles', G.roles.map(r =>
+        '<article class="role" style="border-left-color:' + r.color + '"><div class="rh">' + avatar(r.id, 48) +
+        '<div><h3>' + esc(r.name) + '（' + esc(r.short) + '）</h3><div class="job">' + fmt(r.job) + (r.alias ? '；' + fmt(r.alias) : '') + '</div></div></div>' +
+        '<ul>' + r.does.map(x => '<li>' + fmt(x) + '</li>').join('') + '</ul></article>').join(''));
+    }
+  };
+
+  /* ---------- page ---------- */
+  document.title = G.meta.title;
+  document.getElementById('title').textContent = G.meta.title;
+  document.getElementById('meta').innerHTML = '<span>指南 ' + esc(G.meta.version) + '</span><span>更新 ' + esc(G.meta.date) + '</span><span>依據：' + G.meta.sources.map(esc).join('、') + '</span>';
+  document.getElementById('legend').innerHTML = G.legend.map(([k, v]) => '<span>' + k + ' ' + esc(v) + '</span>').join('');
+
+  const tabsEl = document.getElementById('tabs'), main = document.getElementById('main');
+  const rail = document.getElementById('rail'), here = document.getElementById('here');
+  const tabLabel = id => (G.tabs.find(t => t.id === id) || {}).label || id;
+
+  rail.innerHTML = G.stations.map(s => '<li data-st="' + s.id + '"><button type="button" data-tab="' + s.tab + '" aria-label="' + esc(s.label) + '，到「' + esc(tabLabel(s.tab)) + '」">' +
+    '<span class="dot"></span><span class="lbl">' + esc(s.label) + '</span></button></li>').join('');
+
+  G.tabs.forEach(t => {
+    const b = el('button', '', esc(t.label));
+    b.type = 'button';
+    b.id = 'tab-' + t.id;
+    b.dataset.tab = t.id;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-controls', 'panel-' + t.id);
+    tabsEl.appendChild(b);
+    const p = el('section', 'tabpanel');
+    p.id = 'panel-' + t.id;
+    p.setAttribute('role', 'tabpanel');
+    p.setAttribute('aria-labelledby', 'tab-' + t.id);
+    p.hidden = true;
+    t.blocks.forEach(bk => {
+      const fn = R[bk.type];
+      p.appendChild(fn ? fn(bk) : el('p', 'note warn', '未知的區塊種類：' + esc(bk.type)));
+    });
+    main.appendChild(p);
+  });
+
+  function go(id, scroll) {
+    const t = G.tabs.find(x => x.id === id) || G.tabs[0];
+    tabsEl.querySelectorAll('[role=tab]').forEach(b => {
+      const on = b.dataset.tab === t.id;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    main.querySelectorAll('[role=tabpanel]').forEach(p => { p.hidden = p.id !== 'panel-' + t.id; });
+    const lit = new Set(t.rail === 'all' ? G.stations.map(s => s.id) : t.rail);
+    let prev = false;
+    rail.querySelectorAll('li').forEach(li => {
+      const on = lit.has(li.dataset.st);
+      li.classList.toggle('lit', on);
+      li.classList.toggle('run', on && prev);
+      prev = on;
+    });
+    here.innerHTML = '你在這裡：<strong>' + esc(t.label) + '</strong>　' + fmt(t.here || '');
+    const first = rail.querySelector('li.lit');
+    rail.scrollLeft = first ? Math.max(0, first.offsetLeft - 48) : 0;
+    if (history.replaceState) history.replaceState(null, '', '#' + t.id);
+    if (scroll) window.scrollTo(0, 0);
+  }
+
+  tabsEl.addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) go(b.dataset.tab, true); });
+  tabsEl.addEventListener('keydown', e => {
+    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (keys.indexOf(e.key) < 0) return;
+    const bs = Array.prototype.slice.call(tabsEl.querySelectorAll('[role=tab]'));
+    let i = bs.findIndex(b => b.getAttribute('aria-selected') === 'true');
+    if (e.key === 'ArrowRight') i = (i + 1) % bs.length;
+    else if (e.key === 'ArrowLeft') i = (i - 1 + bs.length) % bs.length;
+    else if (e.key === 'Home') i = 0;
+    else i = bs.length - 1;
+    go(bs[i].dataset.tab, false);
+    bs[i].focus();
+    e.preventDefault();
+  });
+  rail.addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab, true); });
+
+  window.addEventListener('hashchange', () => go(location.hash.replace('#', ''), true));
+  go(location.hash.replace('#', ''), false);
+})();
+</script>
+</body>
+</html>
